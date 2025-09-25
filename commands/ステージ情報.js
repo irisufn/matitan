@@ -1,7 +1,20 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const Canvas = require('canvas');
-const path = require('node:path');
+const path = require('path');
+
+// APIのmode値とコマンドのvalueを正規化
+const MODE_MAP = {
+  'regular': 'regular',
+  'bankara-open': 'bankara-open',
+  'bankara-challenge': 'bankara-challenge',
+  'x': 'x',
+  'event': 'event',
+  'fest': 'fest',
+  'fest-challenge': 'fest-challenge',
+  'salmon': 'coop-grouping',
+  'salmon-contest': 'coop-grouping-team-contest'
+};
 
 const MODE_ICONS = {
   'regular': 'Images/regular.png',
@@ -33,14 +46,14 @@ module.exports = {
         .setRequired(true)
         .addChoices(
           { name: 'レギュラー', value: 'regular' },
-          { name: 'バンカラオープン', value: 'bankara' },
-          { name: 'バンカラチャレンジ', value: 'bankara' },
+          { name: 'バンカラオープン', value: 'bankara-open' },
+          { name: 'バンカラチャレンジ', value: 'bankara-challenge' },
           { name: 'Xマッチ', value: 'x' },
           { name: 'イベント', value: 'event' },
           { name: 'フェスオープン', value: 'fest' },
-          { name: 'フェスチャレンジ', value: 'fest' },
+          { name: 'フェスチャレンジ', value: 'fest-challenge' },
           { name: 'サーモンラン', value: 'salmon' },
-          { name: 'バイトチームコンテスト', value: 'salmon' }
+          { name: 'バイトチームコンテスト', value: 'salmon-contest' }
         ))
     .addStringOption(option =>
       option.setName('スケジュール')
@@ -54,8 +67,19 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
 
-    const mode = interaction.options.getString('モード');
+    // モード値をAPI用に正規化
+    const modeInput = interaction.options.getString('モード');
+    const mode = MODE_MAP[modeInput];
     const schedule = interaction.options.getString('スケジュール') || 'now';
+
+    if (!mode) {
+      return interaction.editReply('指定されたモードは対応していません。');
+    }
+
+    // イベント・バイトチームコンテストはscheduleのみ
+    if ((mode === 'event' || mode === 'coop-grouping-team-contest') && schedule !== 'schedule') {
+      return interaction.editReply('このモードは「予定(schedule)」のみ対応しています。');
+    }
 
     const url = `https://spla3.yuu26.com/api/${mode}/${schedule}`;
     let data;
@@ -67,15 +91,18 @@ module.exports = {
       return interaction.editReply(`API取得中にエラーが発生しました: ${err.message}`);
     }
 
+    // 結果の取得
     const results = data.results || data.result?.[mode] || [];
-    if (!results.length) return interaction.editReply('ステージ情報が見つかりませんでした。');
+    if (!Array.isArray(results) || !results.length) {
+      return interaction.editReply('ステージ情報が見つかりませんでした。');
+    }
 
     const embeds = [];
 
     for (const item of results) {
       const embed = new EmbedBuilder()
         .setAuthor({
-          name: mode,
+          name: modeInput,
           iconURL: `attachment://${path.basename(MODE_ICONS[mode])}`
         })
         .setTitle(item.is_fest ? 'フェスマッチ開催中' : item.rule?.name || 'ステージ情報')
@@ -85,13 +112,13 @@ module.exports = {
         )
         .setFooter({ text: `開始: ${item.start_time} | 終了: ${item.end_time}` });
 
-      // ステージサムネイル
+      // サムネイル
       if (item.rule?.key && RULE_THUMBNAILS[item.rule.key]) {
         embed.setThumbnail(`attachment://${path.basename(RULE_THUMBNAILS[item.rule.key])}`);
       }
 
       // ステージ画像結合
-      if (item.stages?.length === 2) {
+      if (item.stages?.length === 2 && item.stages[0].image && item.stages[1].image) {
         try {
           const canvas = Canvas.createCanvas(640, 320);
           const ctx = canvas.getContext('2d');
@@ -120,14 +147,14 @@ module.exports = {
     }
 
     if (embeds.length) {
-      interaction.editReply({
+      await interaction.editReply({
         embeds,
         files: [
           { attachment: path.resolve(MODE_ICONS[mode]), name: path.basename(MODE_ICONS[mode]) }
         ]
       });
     } else {
-      interaction.editReply('ステージ情報が見つかりませんでした。');
+      await interaction.editReply('ステージ情報が見つかりませんでした。');
     }
   }
 };
