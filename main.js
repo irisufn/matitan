@@ -80,18 +80,20 @@ loadEventArrays();
 //-------------------- コマンド実行 --------------------
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
   const command = client.commands.get(interaction.commandName);
-  if (!command) return console.error(`No command matching ${interaction.commandName} found.`);
-
+  if (!command) return;
   try {
-    await command.execute(client, interaction);
+    await command.execute(interaction); // ← interactionのみ渡す
   } catch (error) {
+    // エラーハンドリング
     console.error(error);
-    await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply('コマンド実行中にエラーが発生しました');
+    } else {
+      await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+    }
   }
 });
-
 
 
 
