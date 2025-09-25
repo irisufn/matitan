@@ -1,0 +1,18 @@
+// .vscode/tasks.json
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start npm",
+      "type": "shell",
+      "command": "npm.cmd start",
+      "group": {
+        "kind": "build",     // Ctrl+Shift+B で実行可能
+        "isDefault": true    // デフォルトタスクに設定
+      },
+      "problemMatcher": []
+    }
+  ]
+}
