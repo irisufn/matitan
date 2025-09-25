@@ -1,0 +1,122 @@
+/* 基本デザイン */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #1e1e2e;
+  color: #fff;
+}
+
+header {
+  background: #2d2d44;
+  padding: 1em;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8em;
+}
+
+nav {
+  margin-top: 0.5em;
+}
+
+nav a {
+  margin: 0 1em;
+  color: #ccc;
+  text-decoration: none;
+}
+
+nav a.active, nav a:hover {
+  color: #fff;
+  border-bottom: 2px solid #7289da;
+}
+
+main {
+  padding: 2em;
+}
+
+.hero {
+  text-align: center;
+  padding: 3em 1em;
+  background: linear-gradient(135deg, #7289da, #5865f2);
+  border-radius: 10px;
+}
+
+.hero h2 {
+  font-size: 2em;
+  margin-bottom: 0.5em;
+}
+
+/* コマンド一覧 */
+.commands {
+  max-width: 900px;
+  margin: auto;
+}
+
+.command-list {
+  display: flex;
+  gap: 1em;
+  flex-wrap: wrap;
+  margin-bottom: 2em;
+  justify-content: center;
+}
+
+.command-btn {
+  background: #5865f2;
+  border: none;
+  padding: 1em 1.5em;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1em;
+  cursor: pointer;
+  transition: 0.3s;
+  min-width: 120px;
+}
+
+.command-btn:hover {
+  background: #4752c4;
+}
+
+.details {
+  background: #2d2d44;
+  padding: 1.5em;
+  border-radius: 10px;
+  min-height: 150px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+
+.details h3 {
+  margin-top: 0;
+}
+
+footer {
+  text-align: center;
+  padding: 1em;
+  background: #2d2d44;
+  margin-top: 2em;
+  font-size: 0.9em;
+}
+
+/* 📱 スマホ対応 */
+@media (max-width: 768px) {
+  nav a {
+    display: inline-block;
+    margin: 0.5em;
+  }
+
+  .command-list {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .command-btn {
+    width: 90%;
+    font-size: 1.2em;
+  }
+
+  .hero h2 {
+    font-size: 1.5em;
+  }
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スラッシュコマンド一覧</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>スラッシュコマンド</h1>
+    <nav>
+      <a href="index.html">ホーム</a>
+      <a href="commands.html" class="active">スラッシュコマンド</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="commands">
+      <h2>コマンド一覧</h2>
+      <div class="command-list">
+        <button class="command-btn" data-target="ping">/ping</button>
+        <button class="command-btn" data-target="auth">/認証</button>
+        <button class="command-btn" data-target="profile">/プロフィール</button>
+        <button class="command-btn" data-target="friendcode">/フレンドコード</button>
+      </div>
+
+      <div id="details" class="details">
+        <h3>詳細</h3>
+        <p>コマンドをクリックすると詳細が表示されます。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Discord Bot Project</p>
+  </footer>
+</body>
+</html>
