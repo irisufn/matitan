@@ -5,21 +5,9 @@ module.exports = {
 		.setName('プロフィール')
 		.setDescription('あなたのプロフィール情報を表示します'),
 
-	/**
-	 * スラッシュコマンド・メッセージコマンド両対応
-	 * @param {Client} client
-	 * @param {Interaction|Message} interactionOrMessage
-	 * @param {Array} [args]
-	 */
-	async execute(client, interactionOrMessage, args) {
-		let user, member;
-		if (interactionOrMessage.isChatInputCommand && interactionOrMessage.isChatInputCommand()) {
-			user = interactionOrMessage.user;
-			member = interactionOrMessage.member;
-		} else {
-			user = interactionOrMessage.author;
-			member = interactionOrMessage.member;
-		}
+	async execute(interaction) {
+		let user = interaction.user;
+		let member = interaction.member;
 
 		// ロール一覧（@everyone を除外）
 		const roles = member ? member.roles.cache
@@ -45,10 +33,6 @@ module.exports = {
 
 		embed.addFields({ name: 'ロール', value: roles, inline: false });
 
-		if (interactionOrMessage.isChatInputCommand && interactionOrMessage.isChatInputCommand()) {
-			await interactionOrMessage.reply({ embeds: [embed], ephemeral: true });
-		} else {
-			await interactionOrMessage.reply({ embeds: [embed] });
-		}
+		await interaction.reply({ embeds: [embed], ephemeral: true });
 	},
 };

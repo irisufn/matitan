@@ -6,10 +6,10 @@ module.exports = {
     .setName('フレンドコード')
     .setDescription('フレンドコードを表示'),
 
-  async execute(client, interaction) {
-    const TARGET_CHANNEL_ID = '1420393502293889165'; // 探すチャンネル
-    const GUIDE_CHANNEL_ID = '1420395483247018155'; // 誘導チャンネル
-    const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
+  async execute(interaction) {
+    const TARGET_CHANNEL_ID = '1420393502293889165';
+    const GUIDE_CHANNEL_ID = '1420395483247018155';
+    const channel = interaction.client.channels.cache.get(TARGET_CHANNEL_ID);
 
     if (!channel) {
       const embed = new EmbedBuilder()
@@ -19,10 +19,7 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: false });
     }
 
-    // 最大1000件まで取得
     const messages = await fetchUpTo1000Messages(channel);
-
-    // ユーザーの最新メッセージを探す
     const userMessages = messages.filter(m => m.author.id === interaction.user.id);
     const userMessage = userMessages.sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
 
@@ -34,7 +31,6 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: false });
     }
 
-    // 正規表現でフレンドコード抽出（ハイフン・スペース・全角スペース・カンマ・ドットに対応）
     const match = userMessage.content.match(/(?:SW[-\s　,.]?)?(\d{4})[-\s　,.]?(\d{4})[-\s　,.]?(\d{4})/i);
 
     if (!match) {
@@ -45,20 +41,18 @@ module.exports = {
       return interaction.reply({ embeds: [embed], ephemeral: false });
     }
 
-    // SW形式に統一
     const code = `SW-${match[1]}-${match[2]}-${match[3]}`;
 
     const embed = new EmbedBuilder()
       .setTitle(`フレンドコード`)
       .setDescription(code)
       .setFooter({ text: 'スマホの方はフレンドコード長押しでコピーできます。' })
-      .setColor(0xFFFF00); // 黄色っぽい色
+      .setColor(0xFFFF00);
 
     await interaction.reply({ embeds: [embed], ephemeral: false });
   },
 };
 
-// メッセージ取得関数
 async function fetchUpTo1000Messages(channel) {
   let allMessages = [];
   let lastId;

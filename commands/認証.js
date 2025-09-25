@@ -35,7 +35,7 @@ module.exports = {
     .setName('認証')
     .setDescription('指定のロールを付与します'),
 
-  async execute(client, interaction) {
+  async execute(interaction) {
     const { guild, member } = interaction;
     const role = guild.roles.cache.get(ROLE_ID);
 
