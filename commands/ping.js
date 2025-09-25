@@ -8,21 +8,28 @@ module.exports = {
   async execute(client, interaction) {
     await interaction.deferReply();
 
-    const tries = 5;
+    const tries = 5; // 測定回数
     const samples = [];
 
     for (let i = 0; i < tries; i++) {
-      const t0 = Date.now();
-      // 実際のPingを計測するために微小な待機
-      await new Promise(r => setTimeout(r, 200)); // 200ms待つ
-      samples.push(Date.now() - t0);
+      const start = Date.now();
+      await interaction.fetchReply(); // API呼び出しでPingを計測
+      const end = Date.now();
+      const ping = end - start;
+      if (ping > 0) samples.push(ping); // -1msなど不正値を除外
     }
 
-    const avg = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10;
+    const averagePing = samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) : '不明';
 
     const embed = new EmbedBuilder()
-      .setDescription(`${avg}`); // 平均値のみ
+      .setTitle('🏓 Ping測定結果')
+      .addFields(
+        { name: '平均Ping', value: `${averagePing} ms`, inline: true },
+        { name: 'Bot API Ping', value: `${Math.round(client.ws.ping)} ms`, inline: true }
+      )
+      .setColor('#00AAFF')
+      .setTimestamp();
 
-    await interaction.editReply({ content: null, embeds: [embed] });
-  },
+    await interaction.editReply({ embeds: [embed] });
+  }
 };
