@@ -74,19 +74,19 @@ loadEventArrays();
 //-------------------- スラッシュコマンド実行 --------------------
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
+
   const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+  if (!command) return console.error(`No command matching ${interaction.commandName} found.`);
+
   try {
-    await command.execute(interaction); // ← interactionのみ渡す
+    await command.execute(client, interaction);
   } catch (error) {
     console.error(error);
-    try {
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply('コマンド実行中にエラーが発生しました');
-      } else {
-        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
-      }
-    } catch (e) {}
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+    } else {
+      await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+    }
   }
 });
 
