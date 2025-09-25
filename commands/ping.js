@@ -5,10 +5,10 @@ module.exports = {
     .setName('ping')
     .setDescription('BotのPing値を表示します。'),
 
-  async execute(interaction) {
+  async execute(client, interaction) {
     const embed = new EmbedBuilder()
       .setTitle('Ping値🏓')
-      .setDescription(`${Math.max(Math.round(interaction.client.ws.ping), 0)} ms`) // -1ms防止
+      .setDescription(`${Math.round(client.ws.ping)} ms`)
       .setColor('#00AAFF')
       .setTimestamp();
 
