@@ -1,47 +1,32 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('ping')
-		.setDescription('Ping値を計測します'),
+  data: new SlashCommandBuilder()
+    .setName('ping')
+    .setDescription('Ping値を表示します。'),
 
-	/**
-	 * スラッシュコマンド専用
-	 * @param {Client} client
-	 * @param {Interaction} interaction
-	 */
-	async execute(client, interaction) {
-		// 計測開始通知
-		await interaction.reply({ content: `計測中... 🛰️`, ephemeral: true });
+  async execute(client, interaction) {
+    await interaction.deferReply();
 
-		// 複数回計測
-		const attempts = 5; // 計測回数
-		const interval = 500; // 計測間隔(ms)
-		const results = [];
+    const tries = 5;
+    const samples = [];
 
-		for (let i = 0; i < attempts; i++) {
-			results.push(client.ws.ping);
-			await new Promise(r => setTimeout(r, interval));
-		}
+    for (let i = 0; i < tries; i++) {
+      const t0 = Date.now();
+      const msg = await interaction.followUp({ content: `測定中…`, fetchReply: true });
+      samples.push(Date.now() - t0);
 
-		// 平均値（-1 は除外）
-		const validResults = results.filter(v => v >= 0);
-		const avg = validResults.length > 0
-			? Math.round(validResults.reduce((a, b) => a + b, 0) / validResults.length)
-			: "計測失敗";
+      try { await msg.delete(); } catch {}
+      await new Promise(r => setTimeout(r, 100));
+    }
 
-		// Embed 作成
-		const embed = new EmbedBuilder()
-			.setColor(0x00AE86)
-			.setTitle('🏓 Pong!')
-			.addFields(
-				{ name: '平均レイテンシ', value: `${avg}ms`, inline: true },
-				{ name: '計測値一覧', value: validResults.map(v => `${v}ms`).join(' / '), inline: true },
-			)
-			.setFooter({ text: `計測回数: ${validResults.length}/${attempts}` })
-			.setTimestamp();
+    const avg = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10;
 
-		// 結果送信（ephemeralで本人のみ）
-		await interaction.editReply({ content: '', embeds: [embed] });
-	},
+    const embed = new EmbedBuilder()
+      .setDescription(`${avg}`) // 数値のみ
+      .setFooter({ text: `${Math.round(client.ws.ping)}` }) // 必要なら WS ping も数値のみ
+      .setTimestamp();
+
+    await interaction.editReply({ content: null, embeds: [embed] });
+  },
 };
