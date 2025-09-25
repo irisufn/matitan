@@ -1,30 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>公式Discord Botページ</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BotName — 公式サイト</title>
+  <meta name="description" content="BotName の公式ページ。コマンド一覧・使い方・導入方法を掲載しています。" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/script.js" defer></script>
+
+  <!-- OGP / Twitterカード -->
+  <meta property="og:title" content="BotName — 公式サイト">
+  <meta property="og:description" content="Discord 向けユーティリティ & コミュニティ管理ボット。コマンド一覧や導入方法はこちら。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="images/ogp.png">
+  <meta name="twitter:card" content="summary_large_image">
 </head>
 <body>
-  <header>
-    <h1>公式Discord Botページ</h1>
+  <div class="container">
+    <header>
+      <div class="logo">B</div>
+      <div class="brand">
+        <h1>BotName — 公式サイト</h1>
+        <p class="lead">Discord 向けユーティリティ & コミュニティ管理ボット。導入、設定、コマンドの使い方を分かりやすく。</p>
+      </div>
+    </header>
+
     <nav>
-      <a href="index.html" class="active">ホーム</a>
-      <a href="commands.html">スラッシュコマンド</a>
+      <button id="nav-home" class="navbtn active">ホーム</button>
+      <button id="nav-commands" class="navbtn">スラッシュコマンド</button>
+      <a href="#" class="navbtn" onclick="alert('このリンクはデモです。')">サポートサーバー</a>
     </nav>
-  </header>
 
-  <main>
-    <section class="hero">
-      <h2>ようこそ！</h2>
-      <p>このページは、Discord Botの公式ページです。</p>
-      <p>利用できるスラッシュコマンドや機能の詳細をここで確認できます。</p>
-    </section>
-  </main>
+    <main>
+      <section id="page-home" class="card hero">
+        <h2>ようこそ — BotName</h2>
+        <p class="lead">BotName はサーバー管理を楽にする高機能ボットです。スラッシュコマンドを通して簡単に操作できます。以下のボタンで導入方法やコマンドを確認してください。</p>
 
-  <footer>
-    <p>&copy; 2025 Discord Bot Project</p>
-  </footer>
+        <div class="row cta">
+          <button class="btn" onclick="installGuide()">導入ガイドを見る</button>
+          <button class="btn btn-outline" onclick="showCommands()">コマンド一覧</button>
+        </div>
+
+        <div style="margin-top:20px" class="card">
+          <h3>導入(簡単)</h3>
+          <ol>
+            <li>Bot の招待リンクを作成（管理者権限は不要。必要な権限のみ付与）</li>
+            <li>招待リンクからサーバーに追加</li>
+            <li>/認証 など初期コマンドを実行して設定</li>
+          </ol>
+        </div>
+
+        <div class="card detail">
+          <h3>よくある質問</h3>
+          <p><strong>Q:</strong> Bot は無料ですか？<br><strong>A:</strong> はい、基本機能は無料で使えます。</p>
+          <p><strong>Q:</strong> 日本語は対応していますか？<br><strong>A:</strong> はい、日本語でのコマンド応答に対応しています。</p>
+        </div>
+      </section>
+
+      <aside>
+        <div class="card">
+          <h3>スラッシュコマンド</h3>
+          <p class="meta">以下をクリックすると詳細が表示されます。</p>
+          <div class="commands-list" id="commands-list">
+            <div class="cmd" data-cmd="ping"><div><strong>/ping</strong><div class="meta">Bot の応答速度を計測</div></div><div>詳細</div></div>
+            <div class="cmd" data-cmd="auth"><div><strong>/認証</strong><div class="meta">サーバー認証・参加手続き</div></div><div>詳細</div></div>
+            <div class="cmd" data-cmd="profile"><div><strong>/プロフィール</strong><div class="meta">ユーザーのプロフィール表示</div></div><div>詳細</div></div>
+            <div class="cmd" data-cmd="friendcode"><div><strong>/フレンドコード</strong><div class="meta">フレンドコード登録・表示</div></div><div>詳細</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4>サポート</h4>
+          <p class="meta">問題が起きたらサポートサーバーへ。招待リンクはダッシュボードから取得できます。</p>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      © BotName • 作成者: あなたの名前
+    </footer>
+  </div>
+
+  <!-- モーダル -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="panel card" role="dialog" aria-modal="true">
+      <button class="modal-close" onclick="closeModal()">閉じる ✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
 </body>
 </html>
