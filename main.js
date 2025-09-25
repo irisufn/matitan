@@ -83,7 +83,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
   try {
-    await command.execute(interaction); // ← 修正: interactionのみ渡す
+    await command.execute(interaction); // interactionのみ渡す
   } catch (error) {
     console.error(error);
     try {
@@ -95,8 +95,6 @@ client.on(Events.InteractionCreate, async interaction => {
     } catch (e) {}
   }
 });
-
-
 
 //-------------------- !gm, !adm で動的に処理ファイルを呼び出す --------------------
 client.on(Events.MessageCreate, async message => {
