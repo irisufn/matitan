@@ -83,7 +83,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
   try {
-    await command.execute(client,interaction); // ← interactionのみ渡す
+    await command.execute(interaction); // ← 修正: interactionのみ渡す
   } catch (error) {
     console.error(error);
     try {
