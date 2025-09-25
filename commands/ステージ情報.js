@@ -1,9 +1,10 @@
+// commands/ステージ情報.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const Canvas = require('canvas');
 const path = require('path');
 
-// APIのmode値とコマンドのvalueを正規化
+// モード正規化
 const MODE_MAP = {
   'regular': 'regular',
   'bankara-open': 'bankara-open',
@@ -16,6 +17,7 @@ const MODE_MAP = {
   'salmon-contest': 'coop-grouping-team-contest'
 };
 
+// アイコンパス
 const MODE_ICONS = {
   'regular': 'Images/regular.png',
   'bankara-open': 'Images/bankara.png',
@@ -39,7 +41,7 @@ const RULE_THUMBNAILS = {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ステージ情報')
-    .setDescription('スプラトゥーン3のみ対応しています。')
+    .setDescription('スプラトゥーン3のステージ情報を取得します')
     .addStringOption(option =>
       option.setName('モード')
         .setDescription('取得するモード')
@@ -64,19 +66,15 @@ module.exports = {
           { name: '次', value: 'next' },
           { name: '予定', value: 'schedule' }
         )),
+  
   async execute(interaction) {
     await interaction.deferReply();
 
-    // モード値をAPI用に正規化
     const modeInput = interaction.options.getString('モード');
     const mode = MODE_MAP[modeInput];
     const schedule = interaction.options.getString('スケジュール') || 'now';
 
-    if (!mode) {
-      return interaction.editReply('指定されたモードは対応していません。');
-    }
-
-    // イベント・バイトチームコンテストはscheduleのみ
+    if (!mode) return interaction.editReply('指定されたモードは対応していません。');
     if ((mode === 'event' || mode === 'coop-grouping-team-contest') && schedule !== 'schedule') {
       return interaction.editReply('このモードは「予定(schedule)」のみ対応しています。');
     }
@@ -91,7 +89,6 @@ module.exports = {
       return interaction.editReply(`API取得中にエラーが発生しました: ${err.message}`);
     }
 
-    // 結果の取得
     const results = data.results || data.result?.[mode] || [];
     if (!Array.isArray(results) || !results.length) {
       return interaction.editReply('ステージ情報が見つかりませんでした。');
@@ -137,7 +134,7 @@ module.exports = {
           });
           continue;
         } catch (err) {
-          console.error('画像結合エラー:', err);
+          console.error('Canvasエラー:', err);
         }
       } else if (item.stages?.[0]?.image) {
         embed.setImage(item.stages[0].image);

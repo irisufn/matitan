@@ -85,18 +85,13 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!command) return console.error(`No command matching ${interaction.commandName} found.`);
 
   try {
-    await interaction.deferReply();
-    await command.execute(interaction); // ← 修正: interactionのみ渡す
-    await interaction.editReply('結果...');
+    await command.execute(client, interaction);
   } catch (error) {
     console.error(error);
-    if (interaction.deferred || interaction.replied) {
-      await interaction.editReply('コマンド実行中にエラーが発生しました');
-    } else {
-      await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
-    }
+    await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
   }
 });
+
 
 
 
