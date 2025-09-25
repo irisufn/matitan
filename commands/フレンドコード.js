@@ -1,6 +1,4 @@
-// commands/フレンドコード.js
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { MessageFlags } = require('discord-api-types/v10');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -53,8 +51,12 @@ module.exports = {
 
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
+      console.error(error);
       if (!interaction.deferred && !interaction.replied) {
-        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: 'コマンド実行中にエラーが発生しました',
+          flags: MessageFlags.Ephemeral
+        });
       }
     }
   },

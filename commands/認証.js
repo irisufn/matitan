@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } = require('discord.js');
-const config = require('../config.json'); // ルートにあるconfig.jsonを読み込む
+const config = require('../config.json');
 
 // 定数
 const ROLE_ID = '1419297290824450058'; // 付与するロールのID
@@ -39,48 +39,43 @@ module.exports = {
     const { guild, member } = interaction;
     const role = guild.roles.cache.get(ROLE_ID);
 
-    // ロールが存在するかを確認
     if (!role) {
       const errorMsg = '指定されたロールが見つかりません。ロールIDが正しいか確認してください。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       sendErrorLog(guild, member.user, role, 'ロール未検出', errorMsg);
       return;
     }
 
-    // ボットがロール管理の権限を持っているかを確認
     if (!guild.members.me.permissions.has(REQUIRED_PERMISSIONS)) {
       const errorMsg = 'ボットにロール管理の権限がありません。必要な権限を付与してください。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       sendErrorLog(guild, member.user, role, '権限不足', errorMsg);
       return;
     }
 
-    // ボットのロールが、付与するロールよりも高いかを確認
     if (role.position >= guild.members.me.roles.highest.position) {
       const errorMsg = 'ボットのロールが付与対象より低いため付与できません。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       sendErrorLog(guild, member.user, role, 'ロール階層エラー', errorMsg);
       return;
     }
 
-    // ユーザーがすでにロールを持っているかを確認
     if (member.roles.cache.has(ROLE_ID)) {
       return interaction.reply({
         embeds: [new EmbedBuilder().setColor('Blue').setTitle('認証済み').setDescription('あなたは認証済みです。')],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
-    // ロールの付与を試行
     try {
       await member.roles.add(role);
       const successEmbed = new EmbedBuilder()
@@ -88,18 +83,17 @@ module.exports = {
         .setTitle('認証完了')
         .setDescription(`${role.name}を付与しました。`)
         .setThumbnail('https://images.emojiterra.com/twitter/v13.1/512px/2705.png');
-      await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [successEmbed], flags: MessageFlags.Ephemeral });
     } catch (error) {
       console.error(error);
       const errorMsg = '不明なエラーが発生しました。';
-      await interaction.reply({
-        embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        ephemeral: true,
-      });
-      sendErrorLog(guild, member.user, role, '実行時エラー', errorMsg, error);
       if (!interaction.deferred && !interaction.replied) {
-        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
+          flags: MessageFlags.Ephemeral,
+        });
       }
+      sendErrorLog(guild, member.user, role, '実行時エラー', errorMsg, error);
     }
   },
 };
