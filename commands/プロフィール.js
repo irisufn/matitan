@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord-api-types/v10');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -10,7 +11,6 @@ module.exports = {
 			let user = interaction.user;
 			let member = interaction.member;
 
-			// ロール一覧（@everyone を除外）
 			const roles = member ? member.roles.cache
 				.filter(r => r.id !== member.guild.id)
 				.map(r => r.toString())
@@ -34,12 +34,10 @@ module.exports = {
 
 			embed.addFields({ name: 'ロール', value: roles, inline: false });
 
-			await interaction.reply({ embeds: [embed], ephemeral: true });
+			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 		} catch (error) {
-			if (interaction.deferred || interaction.replied) {
-				await interaction.editReply('コマンド実行中にエラーが発生しました');
-			} else {
-				await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+			if (!interaction.deferred && !interaction.replied) {
+				await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
 			}
 		}
 	},

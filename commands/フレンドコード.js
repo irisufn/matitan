@@ -1,5 +1,6 @@
 // commands/フレンドコード.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord-api-types/v10');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,7 +18,7 @@ module.exports = {
           .setTitle('エラー')
           .setDescription('指定のチャンネルが見つかりません。')
           .setColor(0xFF0000);
-        return await interaction.reply({ embeds: [embed], ephemeral: false });
+        return await interaction.reply({ embeds: [embed] });
       }
 
       const messages = await fetchUpTo1000Messages(channel);
@@ -29,7 +30,7 @@ module.exports = {
           .setTitle('フレンドコードが見つかりませんでした')
           .setDescription(`あなたのフレンドコードが見つかりませんでした。\n<#${GUIDE_CHANNEL_ID}> にフレンドコードを投稿してください。`)
           .setColor(0xFF0000);
-        return await interaction.reply({ embeds: [embed], ephemeral: false });
+        return await interaction.reply({ embeds: [embed] });
       }
 
       const match = userMessage.content.match(/(?:SW[-\s　,.]?)?(\d{4})[-\s　,.]?(\d{4})[-\s　,.]?(\d{4})/i);
@@ -39,7 +40,7 @@ module.exports = {
           .setTitle('フレンドコードが見つかりませんでした')
           .setDescription(`フレンドコードが見つかりません。\n<#${GUIDE_CHANNEL_ID}> に投稿してください。`)
           .setColor(0xFF0000);
-        return await interaction.reply({ embeds: [embed], ephemeral: false });
+        return await interaction.reply({ embeds: [embed] });
       }
 
       const code = `SW-${match[1]}-${match[2]}-${match[3]}`;
@@ -50,12 +51,10 @@ module.exports = {
         .setFooter({ text: 'スマホの方はフレンドコード長押しでコピーできます。' })
         .setColor(0xFFFF00);
 
-      await interaction.reply({ embeds: [embed], ephemeral: false });
+      await interaction.reply({ embeds: [embed] });
     } catch (error) {
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply('コマンド実行中にエラーが発生しました');
-      } else {
-        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
       }
     }
   },

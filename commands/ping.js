@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { MessageFlags } = require('discord-api-types/v10');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,11 +16,10 @@ module.exports = {
 
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply('コマンド実行中にエラーが発生しました');
-      } else {
-        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
       }
+      // すでに応答済みなら何もしない
     }
   }
 };

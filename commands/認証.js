@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } = require('discord.js');
 const config = require('../config.json'); // ルートにあるconfig.jsonを読み込む
 
 // 定数
@@ -97,6 +97,9 @@ module.exports = {
         ephemeral: true,
       });
       sendErrorLog(guild, member.user, role, '実行時エラー', errorMsg, error);
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', flags: MessageFlags.Ephemeral });
+      }
     }
   },
 };
