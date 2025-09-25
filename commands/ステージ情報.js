@@ -1,10 +1,8 @@
-// commands/ステージ情報.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const Canvas = require('canvas');
 const path = require('path');
 
-// モード正規化
 const MODE_MAP = {
   'regular': 'regular',
   'bankara-open': 'bankara-open',
@@ -17,7 +15,6 @@ const MODE_MAP = {
   'salmon-contest': 'coop-grouping-team-contest'
 };
 
-// アイコンパス
 const MODE_ICONS = {
   'regular': 'Images/regular.png',
   'bankara-open': 'Images/bankara.png',
@@ -41,7 +38,7 @@ const RULE_THUMBNAILS = {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ステージ情報')
-    .setDescription('スプラトゥーン3のステージ情報を取得します')
+    .setDescription('スプラトゥーン3のみ対応しています。')
     .addStringOption(option =>
       option.setName('モード')
         .setDescription('取得するモード')
@@ -79,10 +76,12 @@ module.exports = {
       return interaction.editReply('このモードは「予定(schedule)」のみ対応しています。');
     }
 
-    const url = `https://spla3.yuu26.com/api/${mode}/${schedule}`;
+    // API取得
     let data;
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'DiscordBot/1.0 (contact@yourdomain.com)' } });
+      const res = await fetch(`https://spla3.yuu26.com/api/${mode}/${schedule}`, {
+        headers: { 'User-Agent': 'DiscordBot/1.0 (contact@yourdomain.com)' }
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       data = await res.json();
     } catch (err) {
@@ -95,13 +94,11 @@ module.exports = {
     }
 
     const embeds = [];
+    const files = [{ attachment: path.resolve(MODE_ICONS[mode]), name: path.basename(MODE_ICONS[mode]) }];
 
     for (const item of results) {
       const embed = new EmbedBuilder()
-        .setAuthor({
-          name: modeInput,
-          iconURL: `attachment://${path.basename(MODE_ICONS[mode])}`
-        })
+        .setAuthor({ name: modeInput, iconURL: `attachment://${path.basename(MODE_ICONS[mode])}` })
         .setTitle(item.is_fest ? 'フェスマッチ開催中' : item.rule?.name || 'ステージ情報')
         .setDescription(item.event?.desc || '')
         .addFields(
@@ -109,9 +106,9 @@ module.exports = {
         )
         .setFooter({ text: `開始: ${item.start_time} | 終了: ${item.end_time}` });
 
-      // サムネイル
       if (item.rule?.key && RULE_THUMBNAILS[item.rule.key]) {
         embed.setThumbnail(`attachment://${path.basename(RULE_THUMBNAILS[item.rule.key])}`);
+        files.push({ attachment: path.resolve(RULE_THUMBNAILS[item.rule.key]), name: path.basename(RULE_THUMBNAILS[item.rule.key]) });
       }
 
       // ステージ画像結合
@@ -124,17 +121,11 @@ module.exports = {
           ctx.drawImage(img1, 0, 0, 320, 320);
           ctx.drawImage(img2, 320, 0, 320, 320);
 
-          await interaction.editReply({
-            embeds: [embed],
-            files: [
-              { attachment: path.resolve(MODE_ICONS[mode]), name: path.basename(MODE_ICONS[mode]) },
-              { attachment: path.resolve(RULE_THUMBNAILS[item.rule?.key] || MODE_ICONS[mode]), name: path.basename(RULE_THUMBNAILS[item.rule?.key] || MODE_ICONS[mode]) },
-              { attachment: canvas.toBuffer(), name: 'stages.png' }
-            ]
-          });
-          continue;
+          files.push({ attachment: canvas.toBuffer(), name: `stages_${item.start_time}.png` });
+          embed.setImage(`attachment:stages_${item.start_time}.png`);
         } catch (err) {
-          console.error('Canvasエラー:', err);
+          console.error('画像結合エラー:', err);
+          if (item.stages[0].image) embed.setImage(item.stages[0].image);
         }
       } else if (item.stages?.[0]?.image) {
         embed.setImage(item.stages[0].image);
@@ -143,15 +134,6 @@ module.exports = {
       embeds.push(embed);
     }
 
-    if (embeds.length) {
-      await interaction.editReply({
-        embeds,
-        files: [
-          { attachment: path.resolve(MODE_ICONS[mode]), name: path.basename(MODE_ICONS[mode]) }
-        ]
-      });
-    } else {
-      await interaction.editReply('ステージ情報が見つかりませんでした。');
-    }
+    await interaction.editReply({ embeds, files });
   }
 };
