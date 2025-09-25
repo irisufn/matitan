@@ -60,7 +60,7 @@ module.exports = {
       return await interaction.reply({
         embeds: [
           new EmbedBuilder()
-            .setTitle('🎮 フレンドコード')
+            .setTitle('フレンドコード')
             .setDescription(code)
             .setFooter({ text: 'スマホの方はフレンドコード長押しでコピーできます。' })
             .setColor(0xFFFF00),
