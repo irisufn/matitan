@@ -1,10 +1,10 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ステージ情報')
-        .setDescription('Splatoon 3のステージ情報を表示します。')
+        .setDescription('Splatoon 3のステージ情報をJSON形式で出力します。')
         .addStringOption(option =>
             option.setName('時間')
                 .setDescription('現在のステージか次のステージかを選択してください。')
@@ -23,29 +23,21 @@ module.exports = {
         try {
             const response = await axios.get(apiUrl);
             
-            // APIレスポンスの 'results' 配列の最初の要素を取得
-            const stageInfo = response.data.results[0]; 
+            // JSONデータを整形してコードブロックで表示
+            const jsonOutput = JSON.stringify(response.data, null, 2);
             
-            // データが存在しない場合のエラーハンドリング
-            if (!stageInfo || !stageInfo.stages) {
-                await interaction.editReply('ステージ情報が見つかりませんでした。');
-                return;
+            // 文字数が2000文字を超える場合はファイルとして送信
+            if (jsonOutput.length > 2000) {
+                const file = {
+                    attachment: Buffer.from(jsonOutput),
+                    name: `splatoon3_regular_${time}.json`
+                };
+                await interaction.editReply({ files: [file] });
+            } else {
+                await interaction.editReply({
+                    content: '```json\n' + jsonOutput + '\n```'
+                });
             }
-
-            const stageNames = stageInfo.stages.map(s => s.name).join(' & ');
-            const ruleName = stageInfo.rule.name;
-            const title = `🦑 レギュラーマッチ (${time === 'now' ? '現在' : '次'}) 🦑`;
-
-            const embed = new EmbedBuilder()
-                .setTitle(title)
-                .setColor(0x0099FF)
-                .addFields(
-                    { name: 'ルール', value: ruleName, inline: true },
-                    { name: 'ステージ', value: stageNames, inline: true },
-                    { name: '期間', value: `${stageInfo.start_time.slice(5, 16)} ~ ${stageInfo.end_time.slice(5, 16)}` }
-                );
-
-            await interaction.editReply({ embeds: [embed] });
 
         } catch (error) {
             console.error('APIリクエスト中にエラーが発生しました:', error);
