@@ -1,27 +1,20 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
+// commands/ping.js
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ping')
-    .setDescription('BotのPing値を表示します。'),
+    .setDescription('Ping値を表示します'),
 
   async execute(interaction) {
-    try {
-      const embed = new EmbedBuilder()
-        .setTitle('Ping値🏓')
-        .setDescription(`${Math.max(0, Math.round(interaction.client.ws.ping))} ms`)
-        .setColor('#00AAFF')
-        .setTimestamp();
+    const ping = interaction.client.ws.ping;
 
-      await interaction.reply({ embeds: [embed] });
-    } catch (error) {
-      console.error(error);
-      if (!interaction.deferred && !interaction.replied) {
-        await interaction.reply({
-          content: 'コマンド実行中にエラーが発生しました',
-          flags: MessageFlags.Ephemeral
-        });
-      }
-    }
+    const embed = new EmbedBuilder()
+      .setColor(0x00ff00)
+      .setTitle('🏓 Pong!')
+      .setDescription(`Ping値: **${ping < 0 ? 0 : ping}ms**`);
+
+    // ✅ reply は 1 回だけ
+    await interaction.reply({ embeds: [embed] });
   }
 };

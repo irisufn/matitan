@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const config = require('../config.json');
 
 // 定数
@@ -43,7 +43,7 @@ module.exports = {
       const errorMsg = '指定されたロールが見つかりません。ロールIDが正しいか確認してください。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
       sendErrorLog(guild, member.user, role, 'ロール未検出', errorMsg);
       return;
@@ -53,7 +53,7 @@ module.exports = {
       const errorMsg = 'ボットにロール管理の権限がありません。必要な権限を付与してください。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
       sendErrorLog(guild, member.user, role, '権限不足', errorMsg);
       return;
@@ -63,7 +63,7 @@ module.exports = {
       const errorMsg = 'ボットのロールが付与対象より低いため付与できません。';
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
       sendErrorLog(guild, member.user, role, 'ロール階層エラー', errorMsg);
       return;
@@ -72,7 +72,7 @@ module.exports = {
     if (member.roles.cache.has(ROLE_ID)) {
       return interaction.reply({
         embeds: [new EmbedBuilder().setColor('Blue').setTitle('認証済み').setDescription('あなたは認証済みです。')],
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
@@ -83,14 +83,14 @@ module.exports = {
         .setTitle('認証完了')
         .setDescription(`${role.name}を付与しました。`)
         .setThumbnail('https://images.emojiterra.com/twitter/v13.1/512px/2705.png');
-      await interaction.reply({ embeds: [successEmbed], flags: MessageFlags.Ephemeral });
+      await interaction.reply({ embeds: [successEmbed], ephemeral: true });
     } catch (error) {
       console.error(error);
       const errorMsg = '不明なエラーが発生しました。';
       if (!interaction.deferred && !interaction.replied) {
         await interaction.reply({
           embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
-          flags: MessageFlags.Ephemeral,
+          ephemeral: true,
         });
       }
       sendErrorLog(guild, member.user, role, '実行時エラー', errorMsg, error);
