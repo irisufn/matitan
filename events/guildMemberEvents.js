@@ -44,19 +44,6 @@ module.exports = [
     once: false,
     execute(member) {
       console.log(`[退会] ${member.user.tag} がサーバーから退出しました。`);
-
-      // 通知チャンネル取得
-      const channel = member.guild.channels.cache.get(CHANNEL_ID);
-      if (channel) {
-        const embed = new EmbedBuilder()
-          .setTitle('メンバー退会')
-          .setDescription(`${member.user.tag} がサーバーを退出しました。`)
-          .setColor('Red')
-          .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-          .setTimestamp();
-
-        channel.send({ embeds: [embed] }).catch(console.error);
-      }
     },
   },
 ];
