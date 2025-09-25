@@ -97,9 +97,7 @@ client.on(Events.InteractionCreate, async interaction => {
       } else {
         await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
       }
-    } catch (e) {
-      // すでに応答できない場合は無視
-    }
+    } catch {}
   }
 });
 
