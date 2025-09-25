@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch'); // node-fetch v2/v3 を使用
 
 const RULE_NAMES = {
   TURF_WAR: 'ナワバリバトル',
@@ -13,7 +12,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('ステージ情報')
     .setDescription('現在のスプラ3ステージ情報を表示します'),
-  
+
   async execute(interaction) {
     await interaction.deferReply();
 
@@ -33,7 +32,6 @@ module.exports = {
         .setColor(0x1abc9c)
         .setTimestamp();
 
-      // results 配列の最初の要素だけ表示（必要に応じてループ可能）
       const current = data.results[0];
 
       if (current.is_fest) {
@@ -66,7 +64,6 @@ module.exports = {
         embed.setDescription('現在利用可能なステージ情報はありません。');
       }
 
-      // ステージ画像を添付（1枚目のステージ）
       if (current.stages && current.stages[0] && current.stages[0].image) {
         embed.setThumbnail(current.stages[0].image);
       }
