@@ -3,7 +3,9 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 
+// BASE_URLとUSER_AGENTは適切に設定してください
 const BASE_URL = 'https://spla3.yuu26.com/api/';
+const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000)'; // あなたの連絡先に置き換えてください
 
 const MODES = [
     { name: 'レギュラーマッチ', value: 'regular', title: 'レギュラーマッチ' },
@@ -17,20 +19,18 @@ const MODES = [
     { name: 'バイトチームコンテスト', value: 'coop-grouping-team-contest', title: 'バイトチームコンテスト' },
 ];
 
-const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
-
 const formatTime = (timeString) => {
     const date = new Date(timeString);
-    const jstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-    const hours = String(jstDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(jstDate.getUTCMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    // JSTに変換 (UTC+9)
+    const jstDate = new Date(date.getTime());
+    return jstDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
 };
 
-// 画像をAttachmentとして作成するヘルパー
-const tryAttachImage = (filePath, fileName) => {
+// 画像をAttachmentとして作成するヘルパー関数
+const tryAttachImage = (filePath) => {
     if (fs.existsSync(filePath)) {
-        return new AttachmentBuilder(filePath, { name: fileName });
+        // ファイル名だけを抽出してAttachmentを作成
+        return new AttachmentBuilder(filePath);
     }
     return null;
 };
@@ -53,68 +53,76 @@ module.exports = {
                     { name: '次のステージ', value: 'next' }
                 )),
     async execute(interaction) {
+        // 先に応答を保留
         await interaction.deferReply();
 
-        const modeValue = interaction.options.getString('モード');
-        const timeValue = interaction.options.getString('時間');
-        const modeData = MODES.find(m => m.value === modeValue);
-        const modeTitle = modeData ? modeData.title : '不明なモード';
-
-        let apiUrl = '';
-        if (modeValue.includes('coop-grouping') || modeValue === 'event') {
-            apiUrl = `${BASE_URL}${modeValue}/schedule`;
-        } else {
-            apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
-        }
-
         try {
-            const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
-            let results = response.data.results;
+            const modeValue = interaction.options.getString('モード');
+            const timeValue = interaction.options.getString('時間');
+            const modeData = MODES.find(m => m.value === modeValue);
+            const modeTitle = modeData ? modeData.title : '不明なモード';
 
-            if (!results || results.length === 0) {
-                await interaction.editReply(`現在、**${modeTitle}** の情報はありません。`);
+            let apiUrl = '';
+            // APIのエンドポイントをモードに応じて決定
+            if (modeValue.startsWith('coop-grouping') || modeValue === 'event') {
+                apiUrl = `${BASE_URL}${modeValue}/schedule`;
+            } else {
+                apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
+            }
+
+            const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
+            
+            // `timeValue` に応じて取得するデータを調整
+            let scheduleData;
+            if (timeValue === 'now') {
+                scheduleData = response.data.results?.[0];
+            } else { // 'next'
+                scheduleData = response.data.results?.[1];
+            }
+
+            if (!scheduleData) {
+                await interaction.editReply(`現在、**${modeTitle}** の${timeValue === 'now' ? '現在' : '次'}の情報はありません。`);
                 return;
             }
 
-            results = [results[0]]; // 常に最初の要素のみ
-            const firstInfo = results[0];
-            const isCoopMode = modeValue.includes('coop-grouping');
-
+            const isCoopMode = modeValue.startsWith('coop-grouping');
+            const embed = new EmbedBuilder();
             const attachments = [];
-            const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
-            let embed;
+
+            const timeRange = `${formatTime(scheduleData.start_time)} 〜 ${formatTime(scheduleData.end_time)}`;
 
             if (isCoopMode) {
-                const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
-                const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
-                const weapons = firstInfo.weapons ? firstInfo.weapons.map(w => w.name).join(' / ') : '不明なブキ';
+                const stageName = scheduleData.stage?.name || '不明なステージ';
+                const bossName = scheduleData.boss?.name || '不明なオオモノシャケ';
+                const weapons = scheduleData.weapons?.map(w => w.name).join(' / ') || '不明なブキ';
 
-                embed = new EmbedBuilder()
-                    .setTitle(`💰 ${modeTitle} 💰`)
+                embed.setTitle(`💰 ${modeTitle} 💰`)
                     .setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
                     .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
                     .setColor(0xFF4500);
 
-                // サーモンラン ステージ画像
-                const stageFileName = `${stageName}.png`;
-                const stageFilePath = path.join(process.cwd(), 'images', 'サーモンラン', stageFileName);
-                const stageAttachment = tryAttachImage(stageFilePath, stageFileName);
-                if (stageAttachment) attachments.push(stageAttachment);
-                if (stageAttachment) embed.setImage(`attachment://${stageFileName}`);
+                // ステージ画像
+                const stageImageFile = `${stageName}.png`;
+                const stageImagePath = path.join(process.cwd(), 'images', 'サーモンラン', stageImageFile);
+                const stageAttachment = tryAttachImage(stageImagePath);
+                if (stageAttachment) {
+                    attachments.push(stageAttachment);
+                    embed.setImage(`attachment://${stageImageFile}`);
+                }
 
-                // サーモンラン ボス画像（Thumbnail）
-                const bossFileName = `${bossName}.png`;
-                const bossFilePath = path.join(process.cwd(), 'images', 'サーモンラン', bossFileName);
-                const bossAttachment = tryAttachImage(bossFilePath, bossFileName);
-                if (bossAttachment) attachments.push(bossAttachment);
-                if (bossAttachment) embed.setThumbnail(`attachment://${bossFileName}`);
+                // ボス画像 (Thumbnail)
+                const bossImageFile = `${bossName}.png`;
+                const bossImagePath = path.join(process.cwd(), 'images', 'サーモンラン', bossImageFile);
+                const bossAttachment = tryAttachImage(bossImagePath);
+                if (bossAttachment) {
+                    attachments.push(bossAttachment);
+                    embed.setThumbnail(`attachment://${bossImageFile}`);
+                }
+            } else { // 対戦モード
+                const stageNames = scheduleData.stages?.map(s => s.name).join(' & ') || '不明';
+                const ruleName = scheduleData.rule?.name || '不明';
 
-            } else {
-                const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
-                const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
-
-                embed = new EmbedBuilder()
-                    .setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`)
+                embed.setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`)
                     .setDescription(`**${stageNames}**`)
                     .addFields(
                         { name: 'ルール', value: ruleName, inline: true },
@@ -122,21 +130,42 @@ module.exports = {
                     )
                     .setColor(0x0099FF);
 
-                if (firstInfo.stages && firstInfo.stages.length >= 2) {
-                    const fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
-                    const filePath = path.join(process.cwd(), 'stages', fileName);
-                    const attachment = tryAttachImage(filePath, fileName);
-                    if (attachment) attachments.push(attachment);
-                    if (attachment) embed.setImage(`attachment://${fileName}`);
+                if (scheduleData.stages && scheduleData.stages.length > 0) {
+                    // 1枚目のステージ画像をメイン画像として設定
+                    const stageImageFile = `${scheduleData.stages[0].name}.png`;
+                    const stageImagePath = path.join(process.cwd(), 'images', 'ステージ', stageImageFile); // 'stages' -> 'images/ステージ'など実際のパスに
+                    const stageAttachment = tryAttachImage(stageImagePath);
+                    if (stageAttachment) {
+                        attachments.push(stageAttachment);
+                        embed.setImage(`attachment://${stageImageFile}`);
+                    }
                 }
             }
 
+            // editReplyにembedsとfilesを渡す
             await interaction.editReply({ embeds: [embed], files: attachments });
 
         } catch (error) {
-            console.error('APIリクエストまたはファイル処理中にエラーが発生しました:', error);
-            const status = error.response ? error.response.status : 'N/A';
-            await interaction.editReply(`ステージ情報APIの取得または画像ファイルの処理に失敗しました。\n(エラーコード: ${status} またはネットワーク/ファイル問題)`);
+            console.error('コマンド実行中にエラーが発生しました:', error);
+
+            // エラーの内容に応じてユーザーへのメッセージを分岐
+            let errorMessage = '情報の取得中にエラーが発生しました。';
+            if (error.isAxiosError) {
+                errorMessage = `ステージ情報APIへの接続に失敗しました。(ステータス: ${error.response?.status || 'N/A'})`;
+            } else if (error.code === 10062) { // Unknown Interaction
+                // このエラーがログに出た場合、基本的にはコンソールで確認するしかない
+                // ユーザーには一般的なエラーメッセージを表示
+                console.error('Unknown Interactionエラーをキャッチしました。応答が15分を超えた可能性があります。');
+                errorMessage = '応答の有効期限が切れました。もう一度コマンドをお試しください。';
+            }
+            
+            // interactionがまだ返信可能な状態か確認してからeditReplyを試みる
+            if (!interaction.replied && !interaction.deferred) {
+                // まだ何も応答していない場合（通常はdeferReplyがあるのでここには来ないはず）
+                await interaction.reply({ content: errorMessage, ephemeral: true });
+            } else {
+                 await interaction.editReply({ content: errorMessage, embeds: [], files: [] });
+            }
         }
     },
 };
