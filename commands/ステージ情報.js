@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
+const { createCanvas, loadImage } = require('canvas');
 
 const BASE_URL = 'https://spla3.yuu26.com/api/'; 
 
@@ -19,12 +20,20 @@ const MODES = [
 // 💡 User-Agent設定 (ご自身の連絡先に変更してください！)
 const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
 
-// 💡 時刻を "HH:MM" 形式に整形するヘルパー関数
+// 💡 時刻を "HH:MM" 形式に整形するヘルパー関数 (JST +9時間処理を追加)
 const formatTime = (timeString) => {
-    // APIが返すタイムゾーン付きのISO 8601形式文字列を処理
     const date = new Date(timeString);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    // 9時間分のミリ秒 (9 * 60分 * 60秒 * 1000ミリ秒) を加算
+    // APIの時刻はUTC（Z）として処理されることが多いため、9時間加算してJSTに変換する。
+    const jstTime = date.getTime() + (9 * 60 * 60 * 1000);
+    const jstDate = new Date(jstTime);
+    
+    // getUTCHours()とgetUTCMinutes()で時刻を取得することで、
+    // 実行環境のローカルタイムゾーンに影響されずに、9時間加算後の時刻を表示できる
+    const hours = String(jstDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(jstDate.getUTCMinutes()).padStart(2, '0');
+    
     return `${hours}:${minutes}`;
 };
 
@@ -32,15 +41,13 @@ const formatTime = (timeString) => {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ステージ情報')
-        .setDescription('Splatoon 3のステージ情報を表示します。')
-        // 🔽 モードオプション
+        .setDescription('Splatoon 3のステージ情報を日本時間で表示します。')
         .addStringOption(option =>
             option.setName('モード')
                 .setDescription('取得するゲームモードを選択してください。')
                 .setRequired(true)
                 .addChoices(...MODES.map(m => ({ name: m.name, value: m.value })))
         )
-        // 🔽 時間オプション
         .addStringOption(option =>
             option.setName('時間')
                 .setDescription('取得するステージ情報（現在/次/スケジュール）を選択してください。')
@@ -64,10 +71,8 @@ module.exports = {
         
         // 💡 選択されたモードと時間に基づいてAPI URLを決定
         if (modeValue.includes('coop-grouping') || modeValue === 'event' || timeValue === 'schedule') {
-            // サーモンラン系、イベント、スケジュール指定の場合は /schedule に固定
             apiUrl = `${BASE_URL}${modeValue}/schedule`;
         } else {
-            // regular/now, bankara-open/next など
             apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
         }
 
@@ -83,46 +88,76 @@ module.exports = {
                 await interaction.editReply(`現在、**${modeTitle}** の情報はありません。`);
                 return;
             } else if (timeValue !== 'schedule' && results.length > 1) {
-                // now/next の場合、最初の1つだけを使用
                 results = [results[0]];
             }
 
             const firstInfo = results[0];
             
-            // ステージ名を取得
             const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
+            const stageImageUrls = firstInfo.stages ? firstInfo.stages.map(s => s.image) : (firstInfo.stage ? [firstInfo.stage.image] : []);
             
-            // 💡 1枚目のステージ画像のURLを取得
-            const stageImageUrl = firstInfo.stages && firstInfo.stages.length > 0 
-                ? firstInfo.stages[0].image 
-                : (firstInfo.stage ? firstInfo.stage.image : null);
-
-            // ルール名を取得
             const ruleName = firstInfo.rule ? firstInfo.rule.name : (modeTitle.includes('サーモンラン') || modeTitle.includes('バイトチーム') ? 'バイト' : '不明');
             
-            // 期間を整形
+            // 💡 JST (+9時間) に変換された期間を整形
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
 
-            const embed = new EmbedBuilder()
+            let files = [];
+            let embed = new EmbedBuilder()
                 .setTitle(`🦑 ${modeTitle} (${timeValue === 'schedule' ? '今後の予定' : ruleName}) 🦑`)
                 .setDescription(`**${stageNames}**`)
                 .setColor(0x0099FF)
                 .addFields(
                     { name: 'ルール', value: ruleName, inline: true },
-                    { name: '期間', value: timeRange, inline: true }
+                    { name: '期間 (JST)', value: timeRange, inline: true }
                 );
-            
-            // 💡 ステージ画像が取得できた場合、Embedのサムネイルに設定
-            if (stageImageUrl) {
-                embed.setThumbnail(stageImageUrl);
-            }
+
+            // 💡 canvasで画像を連結する処理
+            if (stageImageUrls.length > 0) {
+                const imagesToLoad = stageImageUrls.slice(0, 2); 
                 
-            await interaction.editReply({ embeds: [embed] });
+                try {
+                    const loadedImages = await Promise.all(imagesToLoad.map(url => loadImage(url)));
+
+                    let totalWidth = 0;
+                    let maxHeight = 0;
+                    loadedImages.forEach(img => {
+                        totalWidth += img.width;
+                        if (img.height > maxHeight) {
+                            maxHeight = img.height;
+                        }
+                    });
+
+                    if (loadedImages.length === 2) {
+                        totalWidth += 10; // 10pxの余白
+                    }
+
+                    const canvas = createCanvas(totalWidth, maxHeight);
+                    const ctx = canvas.getContext('2d');
+
+                    let currentX = 0;
+                    loadedImages.forEach(img => {
+                        const y = (maxHeight - img.height) / 2;
+                        ctx.drawImage(img, currentX, y, img.width, img.height);
+                        currentX += img.width + 10;
+                    });
+
+                    const buffer = canvas.toBuffer('image/png');
+                    const attachment = new AttachmentBuilder(buffer, { name: 'combined_stages.png' });
+                    files.push(attachment);
+                    embed.setImage('attachment://combined_stages.png');
+
+                } catch (imgError) {
+                    console.error('画像読み込みまたはcanvas処理中にエラーが発生しました:', imgError);
+                    embed.setFooter({ text: 'ステージ画像の読み込みまたは結合に失敗しました。' });
+                }
+            }
+
+            await interaction.editReply({ embeds: [embed], files: files });
 
         } catch (error) {
             console.error('APIリクエスト中にエラーが発生しました:', error);
             const status = error.response ? error.response.status : 'N/A';
-            await interaction.editReply(`メインのステージ情報APIの取得に失敗しました。\n(エラーコード: ${status} またはネットワーク問題)`);
+            await interaction.editReply(`ステージ情報APIの取得に失敗しました。\n(エラーコード: ${status} またはネットワーク問題)`);
         }
     },
 };
