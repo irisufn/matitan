@@ -15,6 +15,23 @@ const MODES = [
     { name: 'バイトチームコンテスト', value: 'coop-grouping-team-contest', title: 'バイトチームコンテスト' },
 ];
 
+const MODE_ICONS = {
+    'regular': 'https://github.com/irisufn/images_matitan/blob/main/stages/mode/regular.png',
+    'bankara-open': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/bankara.png',
+    'bankara-challenge': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/bankara.png',
+    'x': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/x.png',
+    'fest': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/fest.png',
+    'fest-challenge': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/fest.png',
+    'event': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/event.png',
+};
+
+const RULE_THUMBNAILS = {
+    'AREA': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/area.png',
+    'LOFT': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/loft.png',
+    'GOAL': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/goal.png',
+    'CLAM': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/clam.png',
+};
+
 const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
 
 const formatTime = (timeString) => {
@@ -66,54 +83,54 @@ module.exports = {
                 return;
             }
 
-            results = [results[0]]; // 常に最初の要素のみ
+            results = [results[0]];
             const firstInfo = results[0];
             const isCoopMode = modeValue.includes('coop-grouping');
-
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
-            let embed;
+            let embed = new EmbedBuilder();
+
+            // Embed Author
+            embed.setAuthor({
+                name: modeTitle,
+                iconURL: MODE_ICONS[modeValue] || undefined
+            });
 
             if (isCoopMode) {
                 const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
                 const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
                 const weapons = firstInfo.weapons ? firstInfo.weapons.map(w => w.name).join(' / ') : '不明なブキ';
 
-                // URL 形式に変更
-                const bossURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(bossName)}.png`;
-                const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(stageName)}.png`;
-
-                console.log(`[TEST] bossName: ${bossName}, bossURL: ${bossURL}`);
-                console.log(`[TEST] stageName: ${stageName}, stageURL: ${stageURL}`);
-
-                embed = new EmbedBuilder()
-                    .setTitle(`💰 ${modeTitle} 💰`)
-                    .setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
+                embed.setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
                     .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
-                    .setThumbnail(bossURL)
-                    .setImage(stageURL)
-                    .setColor(0xFF4500);
-
+                    .setColor(0xFF4500)
+                    .setImage(`https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(stageName)}.png`)
+                    .setThumbnail(`https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(bossName)}.png`);
             } else {
-                // 他モードは従来の処理
-                const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
+                const stageNames = firstInfo.stages && firstInfo.stages.length >= 2
+                    ? firstInfo.stages.map(s => s.name).join('_')
+                    : (firstInfo.stage ? firstInfo.stage.name : '不明');
+                const ruleKey = firstInfo.rule ? firstInfo.rule.key : '';
                 const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
 
-                embed = new EmbedBuilder()
-                    .setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`)
-                    .setDescription(`**${stageNames}**`)
+                embed.setDescription(`**${firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : stageNames}**`)
                     .addFields(
                         { name: 'ルール', value: ruleName, inline: true },
                         { name: '期間 (JST)', value: timeRange, inline: true }
                     )
-                    .setColor(0x0099FF);
+                    .setColor(0x0099FF)
+                    .setImage(`https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stages[0].name)}_${encodeURIComponent(firstInfo.stages[1].name)}.png`);
+
+                if (ruleKey && ruleKey !== 'TURF_WAR' && RULE_THUMBNAILS[ruleKey]) {
+                    embed.setThumbnail(RULE_THUMBNAILS[ruleKey]);
+                }
             }
 
             await interaction.editReply({ embeds: [embed] });
 
         } catch (error) {
-            console.error('APIリクエスト中にエラーが発生しました:', error);
+            console.error('API取得またはEmbed処理中にエラー:', error);
             const status = error.response ? error.response.status : 'N/A';
-            await interaction.editReply(`ステージ情報APIの取得に失敗しました。\n(エラーコード: ${status} またはネットワーク問題)`);
+            await interaction.editReply(`ステージ情報の取得に失敗しました。\n(エラーコード: ${status})`);
         }
     },
 };
