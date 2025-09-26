@@ -1,27 +1,28 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
 
+// 英語をキー、日本語を値にしてDiscordで日本語表示
 const BRAND_MAP = {
-    amiibo: 'amiibo',
-    KOG: 'KOG',
-    アイロニック: 'Ironic',
-    Zink: 'Zink',
-    アタリメイド: 'Cuttlegear',
-    アロメ: 'Tentatek',
-    エゾッコ: 'Zekko',
-    クラーゲス: 'Krak-On',
-    シグレニ: 'Inkline',
-    ジモン: 'Splash Mob',
-    バトロイカ: 'SquidForce',
-    ファミ通: 'Famitsu',
-    フォーリマ: 'Forge',
-    ホタックス: 'Skalop',
-    ホッコリー: 'Firefin',
-    ヤコ: 'Takoroka',
-    ロッケンベルグ: 'Rockenberg'
+    'amiibo': 'アミーボ',
+    'KOG': 'KOG',
+    'Ironic': 'アイロニック',
+    'Zink': 'Zink',
+    'Cuttlegear': 'アタリメイド',
+    'Tentatek': 'アロメ',
+    'Zekko': 'エゾッコ',
+    'Krak-On': 'クラーゲス',
+    'Inkline': 'シグレニ',
+    'Splash Mob': 'ジモン',
+    'SquidForce': 'バトロイカ',
+    'Famitsu': 'ファミ通',
+    'Forge': 'フォーリマ',
+    'Skalop': 'ホタックス',
+    'Firefin': 'ホッコリー',
+    'Takoroka': 'ヤコ',
+    'Rockenberg': 'ロッケンベルグ'
 };
 
 const TYPE_MAP = {
@@ -69,13 +70,20 @@ module.exports = {
 
             const fields = items.map(item => {
                 const gear = item.gear;
+
+                const gearName = locale[gear.__splatoon3ink_id]?.name || gear.name;
+                const primaryGearName = gear.primaryGearPower
+                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name
+                    : 'なし';
+                const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
+
                 return {
-                    name: `${locale[gear.__splatoon3ink_id] || gear.name} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                     value:
                         `価格: ${item.price}\n` +
                         `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${gear.primaryGearPower ? (locale[gear.primaryGearPower.__splatoon3ink_id] || gear.primaryGearPower.name) : 'なし'}\n` +
-                        `ブランド: ${BRAND_MAP[gear.brand.name] || gear.brand.name}`
+                        `メインギアパワー: ${primaryGearName}\n` +
+                        `ブランド: ${brandName}`
                 };
             });
 
@@ -94,13 +102,20 @@ module.exports = {
 
             const fields = pickup.brandGears.map(item => {
                 const gear = item.gear;
+
+                const gearName = locale[gear.__splatoon3ink_id]?.name || gear.name;
+                const primaryGearName = gear.primaryGearPower
+                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name
+                    : 'なし';
+                const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
+
                 return {
-                    name: `${locale[gear.__splatoon3ink_id] || gear.name} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                     value:
                         `価格: ${item.price}\n` +
                         `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${gear.primaryGearPower ? (locale[gear.primaryGearPower.__splatoon3ink_id] || gear.primaryGearPower.name) : 'なし'}\n` +
-                        `ブランド: ${BRAND_MAP[gear.brand.name] || gear.brand.name}`
+                        `メインギアパワー: ${primaryGearName}\n` +
+                        `ブランド: ${brandName}`
                 };
             });
 
