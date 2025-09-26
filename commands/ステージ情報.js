@@ -1,10 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
-const path = require('path'); 
+const path = require('path');
+const fs = require('fs');
 
-const BASE_URL = 'https://spla3.yuu26.com/api/'; 
+const BASE_URL = 'https://spla3.yuu26.com/api/';
 
-// 全てのゲームモードの定義
 const MODES = [
     { name: 'レギュラーマッチ', value: 'regular', title: 'レギュラーマッチ' },
     { name: 'バンカラマッチ(オープン)', value: 'bankara-open', title: 'バンカラマッチ (オープン)' },
@@ -17,29 +17,33 @@ const MODES = [
     { name: 'バイトチームコンテスト', value: 'coop-grouping-team-contest', title: 'バイトチームコンテスト' },
 ];
 
-// 💡 User-Agent設定 (ご自身の連絡先に変更してください！)
 const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
 
-// 時刻を "HH:MM" 形式に整形するヘルパー関数 (JST +9時間処理を含む)
 const formatTime = (timeString) => {
     const date = new Date(timeString);
-    const jstDate = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+    const jstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
     const hours = String(jstDate.getUTCHours()).padStart(2, '0');
     const minutes = String(jstDate.getUTCMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
 };
 
+// 画像をAttachmentとして作成するヘルパー
+const tryAttachImage = (filePath, fileName) => {
+    if (fs.existsSync(filePath)) {
+        return new AttachmentBuilder(filePath, { name: fileName });
+    }
+    return null;
+};
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ステージ情報')
-        .setDescription('Splatoon 3のステージ情報を表示します。') 
+        .setDescription('Splatoon 3のステージ情報を表示します。')
         .addStringOption(option =>
             option.setName('モード')
                 .setDescription('取得するゲームモードを選択してください。')
                 .setRequired(true)
-                .addChoices(...MODES.map(m => ({ name: m.name, value: m.value })))
-        )
+                .addChoices(...MODES.map(m => ({ name: m.name, value: m.value }))))
         .addStringOption(option =>
             option.setName('時間')
                 .setDescription('取得するステージ情報（現在/次）を選択してください。')
@@ -47,23 +51,16 @@ module.exports = {
                 .addChoices(
                     { name: '現在のステージ', value: 'now' },
                     { name: '次のステージ', value: 'next' }
-                    // 💡 「今後のスケジュール (最大12個)」を廃止
-                )
-        ),
-
+                )),
     async execute(interaction) {
-        // 🚨 3秒以内に処理を完了させるための最重要コード
-        await interaction.deferReply(); 
+        await interaction.deferReply();
 
         const modeValue = interaction.options.getString('モード');
         const timeValue = interaction.options.getString('時間');
         const modeData = MODES.find(m => m.value === modeValue);
         const modeTitle = modeData ? modeData.title : '不明なモード';
-        
+
         let apiUrl = '';
-        
-        // 選択されたモードと時間に基づいてAPI URLを決定
-        // 💡 スケジュールオプションが無くなったため、coop-groupingとeventのみ /schedule を使用
         if (modeValue.includes('coop-grouping') || modeValue === 'event') {
             apiUrl = `${BASE_URL}${modeValue}/schedule`;
         } else {
@@ -71,121 +68,80 @@ module.exports = {
         }
 
         try {
-            // User-Agentを設定してメインAPIにリクエストを実行
-            const response = await axios.get(apiUrl, {
-                headers: { 'User-Agent': USER_AGENT }
-            });
-            
+            const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             let results = response.data.results;
-            
+
             if (!results || results.length === 0) {
                 await interaction.editReply(`現在、**${modeTitle}** の情報はありません。`);
                 return;
-            } 
-            
-            // 💡 スケジュールが無くなったため、常に最初の要素のみを使用するように修正
-            results = [results[0]];
-            
+            }
+
+            results = [results[0]]; // 常に最初の要素のみ
             const firstInfo = results[0];
             const isCoopMode = modeValue.includes('coop-grouping');
-            
-            let embed;
+
             const attachments = [];
-
-            // JST (+9時間) に変換された期間を整形
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
+            let embed;
 
-            // --- サーモンラン (COOP) モードの処理 ---
             if (isCoopMode) {
                 const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
                 const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
-                // 武器名を取得し、名前の配列にする
-                const weapons = firstInfo.weapons 
-                    ? firstInfo.weapons.map(w => w.name).join(' / ') 
-                    : '不明なブキ';
-                
-                // --- Embedの説明 (ステージ場所、ブキ、時間) の構築 ---
-                const description = 
-                    `**場所:** ${stageName}\n` +
-                    `**ブキ:** ${weapons}\n` +
-                    `**期間 (JST):** ${timeRange}`;
+                const weapons = firstInfo.weapons ? firstInfo.weapons.map(w => w.name).join(' / ') : '不明なブキ';
 
                 embed = new EmbedBuilder()
                     .setTitle(`💰 ${modeTitle} 💰`)
-                    .setDescription(description)
-                    .setColor(0xFF4500) // サーモンランなのでオレンジ色
-                    .addFields(
-                        { name: 'オオモノシャケ', value: bossName, inline: false }
-                    );
+                    .setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
+                    .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
+                    .setColor(0xFF4500);
 
-                // --- メイン画像 (ステージ画像) の添付 ---
-                let stageAttachment = null;
+                // ステージ画像
                 const stageFileName = `${stageName}.png`;
-                // 💡 フォルダパス: images/サーモンラン/ステージのname.png
                 const stageFilePath = path.join(process.cwd(), 'images', 'サーモンラン', stageFileName);
-                try {
-                    stageAttachment = new AttachmentBuilder(stageFilePath, { name: stageFileName });
+                const stageAttachment = tryAttachImage(stageFilePath, stageFileName);
+                if (stageAttachment) {
                     attachments.push(stageAttachment);
                     embed.setImage(`attachment://${stageFileName}`);
-                } catch (e) {
-                    console.warn(`ステージ画像が見つかりませんでした: ${stageFilePath}`);
                 }
 
-                // --- サムネイル (ボス画像) の添付 ---
-                let bossAttachment = null;
+                // ボス画像
                 const bossFileName = `${bossName}.png`;
-                // 💡 フォルダパス: images/サーモンラン/ボスのname.png
                 const bossFilePath = path.join(process.cwd(), 'images', 'サーモンラン', bossFileName);
-                try {
-                    bossAttachment = new AttachmentBuilder(bossFilePath, { name: bossFileName });
+                const bossAttachment = tryAttachImage(bossFilePath, bossFileName);
+                if (bossAttachment) {
                     attachments.push(bossAttachment);
-                    // 💡 setThumbnailにボス画像を設定
                     embed.setThumbnail(`attachment://${bossFileName}`);
-                } catch (e) {
-                    console.warn(`オオモノシャケ画像が見つかりませんでした: ${bossFilePath}`);
                 }
-            } 
-            // --- レギュラー/バンカラ/Xマッチ/フェスなどの処理 (元のロジック) ---
-            else {
+
+            } else {
                 const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
                 const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
 
                 embed = new EmbedBuilder()
-                    .setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`) // 💡 スケジュールがなくなったため、条件を削除
+                    .setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`)
                     .setDescription(`**${stageNames}**`)
-                    .setColor(0x0099FF)
                     .addFields(
                         { name: 'ルール', value: ruleName, inline: true },
                         { name: '期間 (JST)', value: timeRange, inline: true }
-                    );
+                    )
+                    .setColor(0x0099FF);
 
-                // --- 2ステージ結合画像 (stagesフォルダ) の添付 ---
-                let attachment = null;
-                let fileName = null;
-                
                 if (firstInfo.stages && firstInfo.stages.length >= 2) {
-                    // ファイル名形式: 「ステージ1名_ステージ2名.png」
-                    fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
-                    // 注意: フォルダ名が 'stages' になっています
+                    const fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
                     const filePath = path.join(process.cwd(), 'stages', fileName);
-                    
-                    try {
-                         attachment = new AttachmentBuilder(filePath, { name: fileName });
-                         attachments.push(attachment);
-                         embed.setImage(`attachment://${fileName}`);
-                    } catch (e) {
-                         console.warn(`通常マッチ ステージ結合画像が見つかりませんでした: ${filePath}`);
+                    const attachment = tryAttachImage(filePath, fileName);
+                    if (attachment) {
+                        attachments.push(attachment);
+                        embed.setImage(`attachment://${fileName}`);
                     }
                 }
             }
-            
-            // 💡 添付ファイル付きで返信
-            await interaction.editReply({ embeds: [embed], files: attachments }); 
+
+            await interaction.editReply({ embeds: [embed], files: attachments });
 
         } catch (error) {
             console.error('APIリクエストまたはファイル処理中にエラーが発生しました:', error);
             const status = error.response ? error.response.status : 'N/A';
-            // ファイルの読み込み失敗 (ENOENT: no such file or directory) の場合もここに落ちます
             await interaction.editReply(`ステージ情報APIの取得または画像ファイルの処理に失敗しました。\n(エラーコード: ${status} またはネットワーク/ファイル問題)`);
         }
     },
