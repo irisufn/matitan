@@ -50,6 +50,7 @@ module.exports = {
 
         const type = interaction.options.getString('type');
 
+        // JSON取得
         const gearRes = await fetch(GEAR_JSON_URL);
         const gearData = await gearRes.json();
 
@@ -71,6 +72,7 @@ module.exports = {
             const fields = items.map(item => {
                 const gear = item.gear;
 
+                // locale経由で日本語名に変換
                 const gearName = locale[gear.__splatoon3ink_id]?.name || gear.name;
                 const primaryGearName = gear.primaryGearPower
                     ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name
