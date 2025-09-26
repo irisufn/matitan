@@ -1,10 +1,7 @@
-const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
-const path = require('path');
-const fs = require('fs');
 
 const BASE_URL = 'https://spla3.yuu26.com/api/';
-const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/';
 
 const MODES = [
     { name: 'レギュラーマッチ', value: 'regular', title: 'レギュラーマッチ' },
@@ -26,29 +23,6 @@ const formatTime = (timeString) => {
     const hours = String(jstDate.getUTCHours()).padStart(2, '0');
     const minutes = String(jstDate.getUTCMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
-};
-
-// 画像をAttachmentとして作成するヘルパー (ローカル画像を使わないため、サーモンラン以外の処理で残す)
-const tryAttachImage = (filePath, fileName) => {
-    if (fs.existsSync(filePath)) {
-        return new AttachmentBuilder(filePath, { name: fileName });
-    }
-    return null;
-};
-
-// サーモンランの画像URLを生成するヘルパー関数
-const getCoopImageURL = (name, type) => {
-    // URLエンコードされた名前を取得
-    const encodedName = encodeURIComponent(name);
-
-    if (type === 'boss') {
-        // ボスアイコンのURLを生成
-        return `${IMAGE_BASE_URL}boss%E3%81%AE${encodedName}.png`;
-    } else if (type === 'stage') {
-        // ステージ画像のURLを生成
-        return `${IMAGE_BASE_URL}${encodedName}.png`;
-    }
-    return null;
 };
 
 module.exports = {
@@ -96,7 +70,6 @@ module.exports = {
             const firstInfo = results[0];
             const isCoopMode = modeValue.includes('coop-grouping');
 
-            let attachments = [];
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
             let embed;
 
@@ -104,41 +77,24 @@ module.exports = {
                 const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
                 const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
                 const weapons = firstInfo.weapons ? firstInfo.weapons.map(w => w.name).join(' / ') : '不明なブキ';
-                
-                // 修正箇所: URLから画像を取得
-                const stageImageUrl = getCoopImageURL(stageName, 'stage');
-                const bossIconUrl = getCoopImageURL(bossName, 'boss');
+
+                // URL 形式に変更
+                const bossURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/boss${encodeURIComponent(bossName)}.png`;
+                const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(stageName)}.png`;
+
+                console.log(`[TEST] bossName: ${bossName}, bossURL: ${bossURL}`);
+                console.log(`[TEST] stageName: ${stageName}, stageURL: ${stageURL}`);
 
                 embed = new EmbedBuilder()
                     .setTitle(`💰 ${modeTitle} 💰`)
                     .setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
                     .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
+                    .setThumbnail(bossURL)
+                    .setImage(stageURL)
                     .setColor(0xFF4500);
 
-                // ステージ画像 (setImage)
-                if (stageImageUrl) {
-                    embed.setImage(stageImageUrl);
-                }
-
-                // ボスアイコン (setThumbnail)
-                if (bossIconUrl) {
-                    embed.setThumbnail(bossIconUrl);
-                }
-
-                // ローカルファイルの添付は不要になったため、attachments関連の処理を削除またはコメントアウト
-                // const stageFileName = `${stageName}.png`;
-                // const stageFilePath = path.join(process.cwd(), 'images', 'サーモンラン', stageFileName);
-                // const stageAttachment = tryAttachImage(stageFilePath, stageFileName);
-                // if (stageAttachment) attachments.push(stageAttachment);
-                // if (stageAttachment) embed.setImage(`attachment://${stageFileName}`);
-
-                // const bossFileName = `${bossName}.png`;
-                // const bossFilePath = path.join(process.cwd(), 'images', 'サーモンラン', bossFileName);
-                // const bossAttachment = tryAttachImage(bossFilePath, bossFileName);
-                // if (bossAttachment) attachments.push(bossAttachment);
-                // if (bossAttachment) embed.setThumbnail(`attachment://${bossFileName}`);
-
             } else {
+                // 他モードは従来の処理
                 const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
                 const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
 
@@ -150,23 +106,14 @@ module.exports = {
                         { name: '期間 (JST)', value: timeRange, inline: true }
                     )
                     .setColor(0x0099FF);
-
-                if (firstInfo.stages && firstInfo.stages.length >= 2) {
-                    const fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
-                    const filePath = path.join(process.cwd(), 'stages', fileName);
-                    const attachment = tryAttachImage(filePath, fileName);
-                    if (attachment) attachments.push(attachment);
-                    if (attachment) embed.setImage(`attachment://${fileName}`);
-                }
             }
 
-            // サーモンランではattachmentsが空になるが、他のモードではまだローカル画像を使う可能性があるため、filesオプションは残す
-            await interaction.editReply({ embeds: [embed], files: attachments });
+            await interaction.editReply({ embeds: [embed] });
 
         } catch (error) {
-            console.error('APIリクエストまたはファイル処理中にエラーが発生しました:', error);
+            console.error('APIリクエスト中にエラーが発生しました:', error);
             const status = error.response ? error.response.status : 'N/A';
-            await interaction.editReply(`ステージ情報APIの取得または画像ファイルの処理に失敗しました。\n(エラーコード: ${status} またはネットワーク/ファイル問題)`);
+            await interaction.editReply(`ステージ情報APIの取得に失敗しました。\n(エラーコード: ${status} またはネットワーク問題)`);
         }
     },
 };
