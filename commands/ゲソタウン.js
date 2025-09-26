@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
@@ -49,14 +49,13 @@ module.exports = {
 
         const type = interaction.options.getString('type');
 
-        // JSON取得
         const gearRes = await fetch(GEAR_JSON_URL);
         const gearData = await gearRes.json();
+
         const localeRes = await fetch(LOCALE_JSON_URL);
         const locale = await localeRes.json();
 
-        let embed = new EmbedBuilder()
-            .setTitle('ゲソタウン情報');
+        let embed = new EmbedBuilder().setTitle('ゲソタウン情報');
 
         if (type === 'normal') {
             const items = gearData.limitedGears;
@@ -73,7 +72,6 @@ module.exports = {
             }
         } else if (type === 'pickup') {
             const pickup = gearData.data.gesotown.pickupBrand;
-            // 通常ブランドギア
             for (const item of pickup.brandGears) {
                 const gear = item.gear;
                 embed.addFields({
