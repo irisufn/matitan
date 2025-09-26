@@ -1,27 +1,28 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
 
 const BRAND_MAP = {
-    amiibo: 'amiibo',
-    KOG: 'KOG',
-    アイロニック: 'Ironic',
-    Zink: 'Zink',
-    アタリメイド: 'Cuttlegear',
-    アロメ: 'Tentatek',
-    エゾッコ: 'Zekko',
-    クラーゲス: 'Krak-On',
-    シグレニ: 'Inkline',
-    ジモン: 'Splash Mob',
-    バトロイカ: 'SquidForce',
-    ファミ通: 'Famitsu',
-    フォーリマ: 'Forge',
-    ホタックス: 'Skalop',
-    ホッコリー: 'Firefin',
-    ヤコ: 'Takoroka',
-    ロッケンベルグ: 'Rockenberg'
+    "amiibo": "amiibo",
+    "KOG": "KOG",
+    "Ironic": "アイロニック",
+    "Zink": "Zink",
+    "Cuttlegear": "アタリメイド",
+    "Tentatek": "アロメ",
+    "Zekko": "エゾッコ",
+    "Krak-On": "クラーゲス",
+    "Inkline": "シグレニ",
+    "Splash Mob": "ジモン",
+    "SquidForce": "バトロイカ",
+    "Famitsu": "ファミ通",
+    "Forge": "フォーリマ",
+    "Skalop": "ホタックス",
+    "Firefin": "ホッコリー",
+    "Takoroka": "ヤコ",
+    "Rockenberg": "ロッケンベルグ",
+    "Barazushi": "バラズシ"
 };
 
 const TYPE_MAP = {
@@ -53,61 +54,49 @@ module.exports = {
         const gearData = await gearRes.json();
 
         const localeRes = await fetch(LOCALE_JSON_URL);
-        const locale = await localeRes.json();
+        const localeJson = await localeRes.json();
 
-        let embeds = [];
+        const localeGear = localeJson.gear || {};
+        const localeGearPower = localeJson.gearPower || {};
+
+        let embed = new EmbedBuilder().setTitle('ゲソタウン情報');
 
         if (type === 'normal') {
-            const items = gearData.data.gesotown.limitedGears || [];
-            if (items.length === 0) {
-                return interaction.editReply('現在、通常販売のギアはありません。');
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle('ゲソタウン - 通常販売ギア')
-                .setColor('#11edaa');
-
-            const fields = items.map(item => {
+            const items = gearData.limitedGears;
+            for (const item of items) {
                 const gear = item.gear;
-                return {
-                    name: `${locale[gear.__splatoon3ink_id] || gear.name} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                const gearName = localeGear[gear.__splatoon3ink_id]?.name || gear.name;
+                const gearPower = localeGearPower[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name;
+                const brand = BRAND_MAP[gear.brand.name] || gear.brand.name;
+
+                embed.addFields({
+                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                     value:
                         `価格: ${item.price}\n` +
-                        `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${gear.primaryGearPower ? (locale[gear.primaryGearPower.__splatoon3ink_id] || gear.primaryGearPower.name) : 'なし'}\n` +
-                        `ブランド: ${BRAND_MAP[gear.brand.name] || gear.brand.name}`
-                };
-            });
-
-            embed.addFields(fields);
-            embeds.push(embed);
-
+                        `販売終了: ${new Date(item.saleEndTime).toLocaleString()}\n` +
+                        `メインギアパワー: ${gearPower}\n` +
+                        `ブランド: ${brand}`
+                });
+            }
         } else if (type === 'pickup') {
             const pickup = gearData.data.gesotown.pickupBrand;
-            if (!pickup || !pickup.brandGears || pickup.brandGears.length === 0) {
-                return interaction.editReply('現在、ピックアップ販売はありません。');
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
-                .setColor('#ed751f');
-
-            const fields = pickup.brandGears.map(item => {
+            for (const item of pickup.brandGears) {
                 const gear = item.gear;
-                return {
-                    name: `${locale[gear.__splatoon3ink_id] || gear.name} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                const gearName = localeGear[gear.__splatoon3ink_id]?.name || gear.name;
+                const gearPower = localeGearPower[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name;
+                const brand = BRAND_MAP[gear.brand.name] || gear.brand.name;
+
+                embed.addFields({
+                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                     value:
                         `価格: ${item.price}\n` +
-                        `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${gear.primaryGearPower ? (locale[gear.primaryGearPower.__splatoon3ink_id] || gear.primaryGearPower.name) : 'なし'}\n` +
-                        `ブランド: ${BRAND_MAP[gear.brand.name] || gear.brand.name}`
-                };
-            });
-
-            embed.addFields(fields);
-            embeds.push(embed);
+                        `販売終了: ${new Date(item.saleEndTime).toLocaleString()}\n` +
+                        `メインギアパワー: ${gearPower}\n` +
+                        `ブランド: ${brand}`
+                });
+            }
         }
 
-        await interaction.editReply({ embeds });
+        await interaction.editReply({ embeds: [embed] });
     }
 };
