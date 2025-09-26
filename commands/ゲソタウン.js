@@ -4,7 +4,6 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
 
-// 英語のブランド名を日本語化
 const BRAND_MAP = {
     'amiibo': 'アミーボ',
     'KOG': 'KOG',
@@ -22,7 +21,10 @@ const BRAND_MAP = {
     'Skalop': 'ホタックス',
     'Firefin': 'ホッコリー',
     'Takoroka': 'ヤコ',
-    'Rockenberg': 'ロッケンベルグ'
+    'Rockenberg': 'ロッケンベルグ',
+    'Barazushi': 'バラズシ',
+    'Emberz': 'シチリン',
+    'Z+F': 'エゾッコリー'
 };
 
 const TYPE_MAP = {
@@ -50,7 +52,6 @@ module.exports = {
 
         const type = interaction.options.getString('type');
 
-        // JSON取得
         const gearRes = await fetch(GEAR_JSON_URL);
         const gearData = await gearRes.json();
 
@@ -58,6 +59,32 @@ module.exports = {
         const locale = await localeRes.json();
 
         let embeds = [];
+
+        const processItem = (item) => {
+            const gear = item.gear;
+
+            // IDをログ出力
+            console.log('ギアID:', gear.__splatoon3ink_id);
+            if (gear.primaryGearPower) {
+                console.log('メインギアパワーID:', gear.primaryGearPower.__splatoon3ink_id);
+            }
+
+            // locale経由で日本語化
+            const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
+            const primaryGearName = gear.primaryGearPower
+                ? locale.gear[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
+                : 'なし';
+            const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
+
+            return {
+                name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                value:
+                    `価格: ${item.price}\n` +
+                    `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
+                    `メインギアパワー: ${primaryGearName}\n` +
+                    `ブランド: ${brandName}`
+            };
+        };
 
         if (type === 'normal') {
             const items = gearData.data.gesotown.limitedGears || [];
@@ -69,27 +96,7 @@ module.exports = {
                 .setTitle('ゲソタウン - 通常販売ギア')
                 .setColor('#11edaa');
 
-            const fields = items.map(item => {
-                const gear = item.gear;
-
-                // locale経由で日本語化
-                const gearName = locale[gear.__splatoon3ink_id]?.name || '不明';
-                const primaryGearName = gear.primaryGearPower
-                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
-                    : 'なし';
-                const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
-
-                return {
-                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
-                    value:
-                        `価格: ${item.price}\n` +
-                        `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${primaryGearName}\n` +
-                        `ブランド: ${brandName}`
-                };
-            });
-
-            embed.addFields(fields);
+            embed.addFields(items.map(processItem));
             embeds.push(embed);
 
         } else if (type === 'pickup') {
@@ -102,26 +109,7 @@ module.exports = {
                 .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
                 .setColor('#ed751f');
 
-            const fields = pickup.brandGears.map(item => {
-                const gear = item.gear;
-
-                const gearName = locale[gear.__splatoon3ink_id]?.name || '不明';
-                const primaryGearName = gear.primaryGearPower
-                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
-                    : 'なし';
-                const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
-
-                return {
-                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
-                    value:
-                        `価格: ${item.price}\n` +
-                        `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                        `メインギアパワー: ${primaryGearName}\n` +
-                        `ブランド: ${brandName}`
-                };
-            });
-
-            embed.addFields(fields);
+            embed.addFields(pickup.brandGears.map(processItem));
             embeds.push(embed);
         }
 
