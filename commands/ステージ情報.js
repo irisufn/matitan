@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
-const path = require('path'); // pathモジュールを追加し、ファイルパスを構成
+const path = require('path'); 
 
 const BASE_URL = 'https://spla3.yuu26.com/api/'; 
 
@@ -42,12 +42,12 @@ module.exports = {
         )
         .addStringOption(option =>
             option.setName('時間')
-                .setDescription('取得するステージ情報（現在/次/スケジュール）を選択してください。')
+                .setDescription('取得するステージ情報（現在/次）を選択してください。')
                 .setRequired(true)
                 .addChoices(
                     { name: '現在のステージ', value: 'now' },
-                    { name: '次のステージ', value: 'next' },
-                    { name: '今後のスケジュール (最大12個)', value: 'schedule' }
+                    { name: '次のステージ', value: 'next' }
+                    // 💡 「今後のスケジュール (最大12個)」を廃止
                 )
         ),
 
@@ -63,7 +63,8 @@ module.exports = {
         let apiUrl = '';
         
         // 選択されたモードと時間に基づいてAPI URLを決定
-        if (modeValue.includes('coop-grouping') || modeValue === 'event' || timeValue === 'schedule') {
+        // 💡 スケジュールオプションが無くなったため、coop-groupingとeventのみ /schedule を使用
+        if (modeValue.includes('coop-grouping') || modeValue === 'event') {
             apiUrl = `${BASE_URL}${modeValue}/schedule`;
         } else {
             apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
@@ -80,54 +81,106 @@ module.exports = {
             if (!results || results.length === 0) {
                 await interaction.editReply(`現在、**${modeTitle}** の情報はありません。`);
                 return;
-            } else if (timeValue !== 'schedule' && results.length > 1) {
-                results = [results[0]];
-            }
-
+            } 
+            
+            // 💡 スケジュールが無くなったため、常に最初の要素のみを使用するように修正
+            results = [results[0]];
+            
             const firstInfo = results[0];
+            const isCoopMode = modeValue.includes('coop-grouping');
             
-            const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
-            
-            // 💡 2枚のステージ名を取得し、ファイル名を構成
-            let attachment = null;
-            let fileName = null;
-            
-            if (firstInfo.stages && firstInfo.stages.length >= 2) {
-                // ファイル名形式: 「ステージ1名_ステージ2名.png」
-                fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
-                
-                // process.cwd() はボットの実行ディレクトリを指します
-                const filePath = path.join(process.cwd(), 'stages', fileName);
-                
-                // Discordに添付ファイルとして送信するためにAttachmentBuilderを使用
-                // 🚨 実行環境のルートディレクトリに 'stages' フォルダがあり、画像が保存されている必要があります。
-                attachment = new AttachmentBuilder(filePath, { name: fileName });
-            } else if (firstInfo.stage) {
-                // 1ステージのみのモード（サーモンランなど）の場合、個別の画像添付処理をここに追加できます。
-                // 現在の要件ではスキップされています。
-            }
-            
-            const ruleName = firstInfo.rule ? firstInfo.rule.name : (modeTitle.includes('サーモンラン') || modeTitle.includes('バイトチーム') ? 'バイト' : '不明');
-            
+            let embed;
+            const attachments = [];
+
             // JST (+9時間) に変換された期間を整形
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
 
-            const embed = new EmbedBuilder()
-                .setTitle(`🦑 ${modeTitle} (${timeValue === 'schedule' ? '今後の予定' : ruleName}) 🦑`)
-                .setDescription(`**${stageNames}**`)
-                .setColor(0x0099FF)
-                .addFields(
-                    { name: 'ルール', value: ruleName, inline: true },
-                    { name: '期間 (JST)', value: timeRange, inline: true }
-                );
+            // --- サーモンラン (COOP) モードの処理 ---
+            if (isCoopMode) {
+                const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
+                const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
+                // 武器名を取得し、名前の配列にする
+                const weapons = firstInfo.weapons 
+                    ? firstInfo.weapons.map(w => w.name).join(' / ') 
+                    : '不明なブキ';
+                
+                // --- Embedの説明 (ステージ場所、ブキ、時間) の構築 ---
+                const description = 
+                    `**場所:** ${stageName}\n` +
+                    `**ブキ:** ${weapons}\n` +
+                    `**期間 (JST):** ${timeRange}`;
 
-            // 💡 結合済みの画像を添付ファイルとして設定
-            if (attachment && fileName) {
-                embed.setImage(`attachment://${fileName}`);
+                embed = new EmbedBuilder()
+                    .setTitle(`💰 ${modeTitle} 💰`)
+                    .setDescription(description)
+                    .setColor(0xFF4500) // サーモンランなのでオレンジ色
+                    .addFields(
+                        { name: 'オオモノシャケ', value: bossName, inline: false }
+                    );
+
+                // --- メイン画像 (ステージ画像) の添付 ---
+                let stageAttachment = null;
+                const stageFileName = `${stageName}.png`;
+                // 💡 フォルダパス: images/サーモンラン/ステージのname.png
+                const stageFilePath = path.join(process.cwd(), 'images', 'サーモンラン', stageFileName);
+                try {
+                    stageAttachment = new AttachmentBuilder(stageFilePath, { name: stageFileName });
+                    attachments.push(stageAttachment);
+                    embed.setImage(`attachment://${stageFileName}`);
+                } catch (e) {
+                    console.warn(`ステージ画像が見つかりませんでした: ${stageFilePath}`);
+                }
+
+                // --- サムネイル (ボス画像) の添付 ---
+                let bossAttachment = null;
+                const bossFileName = `${bossName}.png`;
+                // 💡 フォルダパス: images/サーモンラン/ボスのname.png
+                const bossFilePath = path.join(process.cwd(), 'images', 'サーモンラン', bossFileName);
+                try {
+                    bossAttachment = new AttachmentBuilder(bossFilePath, { name: bossFileName });
+                    attachments.push(bossAttachment);
+                    // 💡 setThumbnailにボス画像を設定
+                    embed.setThumbnail(`attachment://${bossFileName}`);
+                } catch (e) {
+                    console.warn(`オオモノシャケ画像が見つかりませんでした: ${bossFilePath}`);
+                }
+            } 
+            // --- レギュラー/バンカラ/Xマッチ/フェスなどの処理 (元のロジック) ---
+            else {
+                const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
+                const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
+
+                embed = new EmbedBuilder()
+                    .setTitle(`🦑 ${modeTitle} (${ruleName}) 🦑`) // 💡 スケジュールがなくなったため、条件を削除
+                    .setDescription(`**${stageNames}**`)
+                    .setColor(0x0099FF)
+                    .addFields(
+                        { name: 'ルール', value: ruleName, inline: true },
+                        { name: '期間 (JST)', value: timeRange, inline: true }
+                    );
+
+                // --- 2ステージ結合画像 (stagesフォルダ) の添付 ---
+                let attachment = null;
+                let fileName = null;
+                
+                if (firstInfo.stages && firstInfo.stages.length >= 2) {
+                    // ファイル名形式: 「ステージ1名_ステージ2名.png」
+                    fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
+                    // 注意: フォルダ名が 'stages' になっています
+                    const filePath = path.join(process.cwd(), 'stages', fileName);
+                    
+                    try {
+                         attachment = new AttachmentBuilder(filePath, { name: fileName });
+                         attachments.push(attachment);
+                         embed.setImage(`attachment://${fileName}`);
+                    } catch (e) {
+                         console.warn(`通常マッチ ステージ結合画像が見つかりませんでした: ${filePath}`);
+                    }
+                }
             }
-
+            
             // 💡 添付ファイル付きで返信
-            await interaction.editReply({ embeds: [embed], files: attachment ? [attachment] : [] }); 
+            await interaction.editReply({ embeds: [embed], files: attachments }); 
 
         } catch (error) {
             console.error('APIリクエストまたはファイル処理中にエラーが発生しました:', error);
