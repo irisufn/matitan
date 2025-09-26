@@ -4,7 +4,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
 
-// 英語をキー、日本語を値にしてDiscordで日本語表示
+// 英語のブランド名を日本語化
 const BRAND_MAP = {
     'amiibo': 'アミーボ',
     'KOG': 'KOG',
@@ -72,10 +72,10 @@ module.exports = {
             const fields = items.map(item => {
                 const gear = item.gear;
 
-                // locale経由で日本語名に変換
-                const gearName = locale[gear.__splatoon3ink_id]?.name || gear.name;
+                // locale経由で日本語化
+                const gearName = locale[gear.__splatoon3ink_id]?.name || '不明';
                 const primaryGearName = gear.primaryGearPower
-                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name
+                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
                     : 'なし';
                 const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
 
@@ -105,9 +105,9 @@ module.exports = {
             const fields = pickup.brandGears.map(item => {
                 const gear = item.gear;
 
-                const gearName = locale[gear.__splatoon3ink_id]?.name || gear.name;
+                const gearName = locale[gear.__splatoon3ink_id]?.name || '不明';
                 const primaryGearName = gear.primaryGearPower
-                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || gear.primaryGearPower.name
+                    ? locale[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
                     : 'なし';
                 const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
 
