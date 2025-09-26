@@ -3,7 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
-const CHANNEL_ID = '1420404689991762060'; // ←ここを設定
+const CHANNEL_ID = '1420404689991762060'; // 通知用チャンネルID
+const ROLE_ID = '1421125163797319720';    // ←付与したいロールIDを設定
 
 module.exports = [
   {
@@ -26,6 +27,19 @@ module.exports = [
         channel.send({ embeds: [embed] }).catch(console.error);
       }
 
+      // 🔹 ロール付与
+      try {
+        const role = member.guild.roles.cache.get(ROLE_ID);
+        if (role) {
+          await member.roles.add(role);
+          console.log(`[ロール付与] ${member.user.tag} に ${role.name} を付与しました。`);
+        } else {
+          console.warn(`[警告] ロールID ${ROLE_ID} が見つかりませんでした。`);
+        }
+      } catch (err) {
+        console.error(`[エラー] ${member.user.tag} へのロール付与失敗:`, err);
+      }
+
       // ブラックリストチェック
       try {
         const blacklistPath = path.join(__dirname, '../data/blacklist.json');
@@ -37,13 +51,6 @@ module.exports = [
       } catch (e) {
         console.error('ブラックリストチェック失敗:', e);
       }
-    },
-  },
-  {
-    name: 'guildMemberRemove',
-    once: false,
-    execute(member) {
-      console.log(`[退会] ${member.user.tag} がサーバーから退出しました。`);
     },
   },
 ];
