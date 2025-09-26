@@ -95,23 +95,19 @@ module.exports = {
                     .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
                     .setColor(0xFF4500);
 
-                // ステージ画像
+                // サーモンラン ステージ画像
                 const stageFileName = `${stageName}.png`;
                 const stageFilePath = path.join(process.cwd(), 'images', 'サーモンラン', stageFileName);
                 const stageAttachment = tryAttachImage(stageFilePath, stageFileName);
-                if (stageAttachment) {
-                    attachments.push(stageAttachment);
-                    embed.setImage(`attachment://${stageFileName}`);
-                }
+                if (stageAttachment) attachments.push(stageAttachment);
+                if (stageAttachment) embed.setImage(`attachment://${stageFileName}`);
 
-                // ボス画像
+                // サーモンラン ボス画像（Thumbnail）
                 const bossFileName = `${bossName}.png`;
                 const bossFilePath = path.join(process.cwd(), 'images', 'サーモンラン', bossFileName);
                 const bossAttachment = tryAttachImage(bossFilePath, bossFileName);
-                if (bossAttachment) {
-                    attachments.push(bossAttachment);
-                    embed.setThumbnail(`attachment://${bossFileName}`);
-                }
+                if (bossAttachment) attachments.push(bossAttachment);
+                if (bossAttachment) embed.setThumbnail(`attachment://${bossFileName}`);
 
             } else {
                 const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
@@ -130,10 +126,8 @@ module.exports = {
                     const fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
                     const filePath = path.join(process.cwd(), 'stages', fileName);
                     const attachment = tryAttachImage(filePath, fileName);
-                    if (attachment) {
-                        attachments.push(attachment);
-                        embed.setImage(`attachment://${fileName}`);
-                    }
+                    if (attachment) attachments.push(attachment);
+                    if (attachment) embed.setImage(`attachment://${fileName}`);
                 }
             }
 
