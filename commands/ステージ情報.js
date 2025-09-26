@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
-const path = require('path'); // 💡 pathモジュールを追加
-// 💡 canvas, loadImage のインポートは不要
+const path = require('path'); // pathモジュールを追加し、ファイルパスを構成
 
 const BASE_URL = 'https://spla3.yuu26.com/api/'; 
 
@@ -24,10 +23,6 @@ const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your web
 // 時刻を "HH:MM" 形式に整形するヘルパー関数 (JST +9時間処理を含む)
 const formatTime = (timeString) => {
     const date = new Date(timeString);
-    // date.getTime() + (9 * 60 * 60 * 1000) は、タイムゾーンオフセットを考慮せずにUTC時刻を9時間進めているため、
-    // 正確にはロケール依存のタイムゾーン処理が必要です。
-    // APIが+09:00形式でJSTを返していると仮定し、そのまま処理を継続します。
-    // Discordボットが動く環境のタイムゾーン設定に依存しないよう、getUTCHours()などを利用する既存の処理を維持します。
     const jstDate = new Date(date.getTime() + (9 * 60 * 60 * 1000));
     const hours = String(jstDate.getUTCHours()).padStart(2, '0');
     const minutes = String(jstDate.getUTCMinutes()).padStart(2, '0');
@@ -38,7 +33,7 @@ const formatTime = (timeString) => {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ステージ情報')
-        .setDescription('Splatoon 3のステージ情報を表示します。') // 説明を簡略化
+        .setDescription('Splatoon 3のステージ情報を表示します。') 
         .addStringOption(option =>
             option.setName('モード')
                 .setDescription('取得するゲームモードを選択してください。')
@@ -100,16 +95,16 @@ module.exports = {
             if (firstInfo.stages && firstInfo.stages.length >= 2) {
                 // ファイル名形式: 「ステージ1名_ステージ2名.png」
                 fileName = `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}.png`;
+                
+                // process.cwd() はボットの実行ディレクトリを指します
                 const filePath = path.join(process.cwd(), 'stages', fileName);
                 
                 // Discordに添付ファイルとして送信するためにAttachmentBuilderを使用
-                // 💡 ファイルが存在しない場合のエラーハンドリングは含まれていません。
-                // 💡 ボットが実行されている環境に 'stages' フォルダがあり、画像が保存されている必要があります。
+                // 🚨 実行環境のルートディレクトリに 'stages' フォルダがあり、画像が保存されている必要があります。
                 attachment = new AttachmentBuilder(filePath, { name: fileName });
             } else if (firstInfo.stage) {
-                // ステージが1つのモードの場合（例: サーモンラン、イベントマッチなど）の対応はここでは行いません。
-                // ご要望は「stages内にnameが2つある場合」の対応のため、ここではスキップします。
-                // もし1ステージの場合の画像が必要であれば、個別の対応が必要です。
+                // 1ステージのみのモード（サーモンランなど）の場合、個別の画像添付処理をここに追加できます。
+                // 現在の要件ではスキップされています。
             }
             
             const ruleName = firstInfo.rule ? firstInfo.rule.name : (modeTitle.includes('サーモンラン') || modeTitle.includes('バイトチーム') ? 'バイト' : '不明');
@@ -131,15 +126,13 @@ module.exports = {
                 embed.setImage(`attachment://${fileName}`);
             }
 
-            // 💡 2枚目の画像URLフィールドは削除
-
             // 💡 添付ファイル付きで返信
             await interaction.editReply({ embeds: [embed], files: attachment ? [attachment] : [] }); 
 
         } catch (error) {
             console.error('APIリクエストまたはファイル処理中にエラーが発生しました:', error);
             const status = error.response ? error.response.status : 'N/A';
-            // ファイルパスのエラーが発生した場合もこちらに落ちる
+            // ファイルの読み込み失敗 (ENOENT: no such file or directory) の場合もここに落ちます
             await interaction.editReply(`ステージ情報APIの取得または画像ファイルの処理に失敗しました。\n(エラーコード: ${status} またはネットワーク/ファイル問題)`);
         }
     },
