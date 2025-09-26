@@ -15,25 +15,24 @@ const MODES = [
     { name: 'バイトチームコンテスト', value: 'coop-grouping-team-contest', title: 'バイトチームコンテスト' },
 ];
 
-const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
-
 const MODE_ICONS = {
     regular: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/regular.png',
     'bankara-open': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/bankara.png',
     'bankara-challenge': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/bankara.png',
     x: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/x.png',
-    fest: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/fest.png',
-    'fest-challenge': 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/fest.png',
     event: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/event.png',
+    fest: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/fest.png',
 };
 
 const RULE_THUMBNAILS = {
+    TURF_WAR: null,
     AREA: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/area.png',
     LOFT: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/loft.png',
     GOAL: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/goal.png',
     CLAM: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/clam.png',
-    TURF_WAR: null, // なし
 };
+
+const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
 
 const formatTime = (timeString) => {
     const date = new Date(timeString);
@@ -80,51 +79,81 @@ module.exports = {
             let results = response.data.results;
 
             if (!results || results.length === 0) {
-                // Embed 作成（イベントなしの場合）
-                const noEventEmbed = new EmbedBuilder()
-                    .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] })
-                    .setDescription('現在イベントはありません。')
+                const emptyEmbed = new EmbedBuilder()
+                    .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
+                    .setDescription('現在このモードの情報はありません。')
                     .setColor(0x808080);
-                await interaction.editReply({ embeds: [noEventEmbed] });
+                await interaction.editReply({ embeds: [emptyEmbed] });
                 return;
             }
 
+            results = [results[0]];
             const firstInfo = results[0];
             const isCoopMode = modeValue.includes('coop-grouping');
+
+            const embed = new EmbedBuilder();
             const timeRange = `${formatTime(firstInfo.start_time)} 〜 ${formatTime(firstInfo.end_time)}`;
-            let embed = new EmbedBuilder();
 
             if (isCoopMode) {
                 const stageName = firstInfo.stage ? firstInfo.stage.name : '不明なステージ';
                 const bossName = firstInfo.boss ? firstInfo.boss.name : '不明なオオモノシャケ';
                 const weapons = firstInfo.weapons ? firstInfo.weapons.map(w => w.name).join(' / ') : '不明なブキ';
 
-                embed
-                    .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] })
-                    .setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
-                    .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
-                    .setColor(0xFF4500)
-                    .setThumbnail(`https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(bossName)}.png`)
-                    .setImage(`https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(stageName)}.png`);
+                // サーモンラン専用 author
+                embed.setAuthor({ 
+                    name: modeTitle, 
+                    iconURL: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/salmon.png' 
+                });
+
+                embed.setDescription(`**場所:** ${stageName}\n**ブキ:** ${weapons}\n**期間 (JST):** ${timeRange}`)
+                     .addFields({ name: 'オオモノシャケ', value: bossName, inline: false })
+                     .setColor(0xFF4500);
+
+                // URL画像
+                const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(stageName)}.png`;
+                const bossURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/images/%E3%82%B5%E3%83%BC%E3%83%A2%E3%83%B3%E3%83%A9%E3%83%B3/${encodeURIComponent(bossName)}.png`;
+
+                embed.setImage(stageURL).setThumbnail(bossURL);
+
             } else {
-                const stageImageURL = (firstInfo.stages && firstInfo.stages.length >= 2)
-                    ? `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stages[0].name)}_${encodeURIComponent(firstInfo.stages[1].name)}.png`
-                    : (firstInfo.stages && firstInfo.stages.length === 1)
-                        ? `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stages[0].name)}.png`
-                        : (firstInfo.stage ? `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stage.name)}.png` : null);
+                embed.setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null });
 
-                const ruleKey = firstInfo.rule ? firstInfo.rule.key : null;
-                const thumbnailURL = ruleKey && RULE_THUMBNAILS[ruleKey] ? RULE_THUMBNAILS[ruleKey] : null;
-                const stageNames = firstInfo.stages ? firstInfo.stages.map(s => s.name).join(' & ') : (firstInfo.stage ? firstInfo.stage.name : '不明');
+                const stageNames = firstInfo.stages
+                    ? firstInfo.stages.length === 1
+                        ? firstInfo.stages[0].name
+                        : `${firstInfo.stages[0].name}_${firstInfo.stages[1].name}`
+                    : (firstInfo.stage ? firstInfo.stage.name : '不明');
 
-                embed
-                    .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] })
-                    .setDescription(`**${stageNames}**\n期間 (JST): ${timeRange}`)
-                    .addFields({ name: 'ルール', value: firstInfo.rule ? firstInfo.rule.name : '不明', inline: true })
-                    .setColor(0x0099FF);
+                const ruleName = firstInfo.rule ? firstInfo.rule.name : '不明';
+                embed.setDescription(`**${stageNames}**`)
+                     .addFields(
+                        { name: 'ルール', value: ruleName, inline: true },
+                        { name: '期間 (JST)', value: timeRange, inline: true }
+                     )
+                     .setColor(0x0099FF);
 
+                // ステージ画像URL
+                if (firstInfo.stages) {
+                    if (firstInfo.stages.length === 1) {
+                        const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stages[0].name)}.png`;
+                        embed.setImage(stageURL);
+                    } else {
+                        const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stages[0].name)}_${encodeURIComponent(firstInfo.stages[1].name)}.png`;
+                        embed.setImage(stageURL);
+                    }
+                } else if (firstInfo.stage) {
+                    const stageURL = `https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/${encodeURIComponent(firstInfo.stage.name)}.png`;
+                    embed.setImage(stageURL);
+                }
+
+                // サムネイル設定
+                let thumbnailURL = null;
+                if (modeValue === 'regular') {
+                    thumbnailURL = MODE_ICONS['regular'];
+                } else if (firstInfo.rule && RULE_THUMBNAILS[firstInfo.rule.key]) {
+                    thumbnailURL = RULE_THUMBNAILS[firstInfo.rule.key];
+                }
                 if (thumbnailURL) embed.setThumbnail(thumbnailURL);
-                if (stageImageURL) embed.setImage(stageImageURL);
             }
 
             await interaction.editReply({ embeds: [embed] });
