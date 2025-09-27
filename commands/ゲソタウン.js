@@ -5,26 +5,27 @@ const GEAR_JSON_URL = 'https://splatoon3.ink/data/gear.json';
 const LOCALE_JSON_URL = 'https://splatoon3.ink/data/locale/ja-JP.json';
 
 const BRAND_MAP = {
-    'amiibo': 'アミーボ',
-    'KOG': 'KOG',
-    'Ironic': 'アイロニック',
-    'Zink': 'Zink',
+    'Zink': 'アイロニック',
     'Cuttlegear': 'アタリメイド',
+    'Annaki': 'アナアキ',
+    'amiibo': 'amiibo',
     'Tentatek': 'アロメ',
     'Zekko': 'エゾッコ',
+    'Z+F': 'エゾッコリー',
+    'Enperry': 'エンペリー',
+    'Grizzco': 'クマサン商会',
     'Krak-On': 'クラーゲス',
     'Inkline': 'シグレニ',
+    'Emberz': 'シチリン',
     'Splash Mob': 'ジモン',
+    'Toni Kensa': 'タタキケンサキ',
     'SquidForce': 'バトロイカ',
-    'Famitsu': 'ファミ通',
+    'Barazushi': 'バラズシ',
     'Forge': 'フォーリマ',
     'Skalop': 'ホタックス',
     'Firefin': 'ホッコリー',
-    'Takoroka': 'ヤコ',
     'Rockenberg': 'ロッケンベルグ',
-    'Barazushi': 'バラズシ',
-    'Emberz': 'シチリン',
-    'Z+F': 'エゾッコリー'
+    'Takoroka': 'ヤコ'
 };
 
 const TYPE_MAP = {
@@ -63,12 +64,6 @@ module.exports = {
         const processItem = (item) => {
             const gear = item.gear;
 
-            // IDをログ出力
-            console.log('ギアID:', gear.__splatoon3ink_id);
-            if (gear.primaryGearPower) {
-                console.log('メインギアパワーID:', gear.primaryGearPower.__splatoon3ink_id);
-            }
-
             // locale経由で日本語化
             const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
             const primaryGearName = gear.primaryGearPower
@@ -79,7 +74,7 @@ module.exports = {
             return {
                 name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                 value:
-                    `価格: ${item.price}\n` +
+                    `価格: ${item.price}ゲソ\n` + // ← 単位を「ゲソ」に変更
                     `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
                     `メインギアパワー: ${primaryGearName}\n` +
                     `ブランド: ${brandName}`
@@ -107,7 +102,9 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
-                .setColor('#ed751f');
+                .setColor('#ed751f')
+                .setImage(pickup.image.url) // ← pickupBrand.image.url をセット
+                .setThumbnail(pickup.brand.image.url); // ← pickupBrand.brand.image.url をサムネイルに
 
             embed.addFields(pickup.brandGears.map(processItem));
             embeds.push(embed);
