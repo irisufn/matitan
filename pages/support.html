@@ -211,12 +211,16 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #2d2d2d, #4b5563);
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: white;
+        }
+
+        .admin-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .admin-details h3 {
@@ -401,32 +405,35 @@
                 </div>
                 <div class="section-content">
                     <div class="admin-info">
-                        <div class="admin-avatar">👨‍💻</div>
+                        <div class="admin-avatar">
+                            <img src="https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/others/irisu.png" alt="管理者アイコン">
+                        </div>
+                        
                         <div class="admin-details">
-                            <h3>BOT Administrator</h3>
-                            <p>Discord BOTの開発・運営を担当しています</p>
+                            <h3>いりす</h3>
+                            <p>Discord BOTの開発・運営を担当しています。</p>
                         </div>
                     </div>
                     <div class="contact-methods">
                         <a href="#" class="contact-item">
                             <div class="contact-icon">💬</div>
                             <div>
-                                <strong>Discord DM</strong>
-                                <br><small>@bot_admin#1234</small>
+                                <strong>Discord</strong>
+                                <br><small>ses1risu</small>
                             </div>
                         </a>
                         <a href="#" class="contact-item">
                             <div class="contact-icon">📧</div>
                             <div>
-                                <strong>Email</strong>
-                                <br><small>admin@discordbot.example.com</small>
+                                <strong>スプラ名</strong>
+                                <br><small>あんどうなつ</small>
                             </div>
                         </a>
                         <a href="#" class="contact-item">
                             <div class="contact-icon">🐛</div>
                             <div>
                                 <strong>バグ報告</strong>
-                                <br><small>GitHub Issues または Discord</small>
+                                <br><small>/問い合わせ　よりお願いします。</small>
                             </div>
                         </a>
                     </div>
