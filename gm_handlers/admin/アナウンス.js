@@ -20,7 +20,7 @@ module.exports = async (client, message, args) => {
   }
 
   // 引数チェック
-  if (args.length < 4) {
+  if (args.length < 3) {
     return message.reply('引数が不足しています。');
   }
 
@@ -50,8 +50,8 @@ module.exports = async (client, message, args) => {
   // アナウンス用Embed
   const announceEmbed = new EmbedBuilder()
     .setTitle(title)
-    .setDescription(description)
-    .setAuthor({ name: displayName, iconURL: avatarURL })
+    .setDescription(description) // ← \n で改行可能
+    .setFooter({ text: `送信者: ${name}`, iconURL: avatarURL })
     .setTimestamp()
     .setColor(color);
 
