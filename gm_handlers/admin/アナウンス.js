@@ -44,7 +44,7 @@ module.exports = async (client, message, args) => {
   const description = args.slice(3).join(' ');
 
   // 表示名とアイコン
-  const displayName = message.member?.nickname || message.author.username;
+  const name = message.author.globalName || message.author.username;
   const avatarURL = message.author.displayAvatarURL({ dynamic: true });
 
   // アナウンス用Embed
