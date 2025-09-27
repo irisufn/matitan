@@ -19,16 +19,17 @@ module.exports = async (client, message, args) => {
     return;
   }
 
-  // 引数不足チェック
+  // 引数チェック
   // args[0] = "アナウンス"
   // args[1] = カラーコード
-  // args[2]以降 = 本文
-  if (args.length < 3) {
-    return message.reply('使い方: `!adm アナウンス [カラーコード] [本文...]`');
+  // args[2] = タイトル
+  // args[3]以降 = 説明
+  if (args.length < 4) {
+    return message.reply('引数が不足しています。');
   }
 
   // 固定送信先チャンネルID
-  const CHANNEL_ID = '1421497191758954526'; // ←ここを固定したいチャンネルIDに置き換えてください
+  const CHANNEL_ID = '1421497191758954526';
   const targetChannel = client.channels.cache.get(CHANNEL_ID);
   if (!targetChannel) {
     return message.reply('送信先チャンネルが見つかりませんでした。');
@@ -43,17 +44,18 @@ module.exports = async (client, message, args) => {
     return message.reply('カラーコードの形式が正しくありません。例: `#00AE86`');
   }
 
-  // 本文
-  const content = args.slice(2).join(' ');
+  const title = args[2];
+  const description = args.slice(3).join(' ');
+
+  // 表示名とアイコン
+  const displayName = message.member?.nickname || message.author.username;
+  const avatarURL = message.author.displayAvatarURL({ dynamic: true });
 
   // Embed作成
   const embed = new EmbedBuilder()
-    .setTitle('アナウンス')
-    .setDescription(content)
-    .setAuthor({
-      name: 'まちたん',
-      iconURL: client.user.displayAvatarURL({ dynamic: true }),
-    })
+    .setTitle(title)
+    .setDescription(description)
+    .setAuthor({ name: displayName, iconURL: avatarURL })
     .setTimestamp()
     .setColor(color);
 
