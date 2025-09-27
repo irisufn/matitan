@@ -64,21 +64,17 @@ module.exports = {
         const processItem = (item) => {
             const gear = item.gear;
 
-            // ギア名（locale.gear）
+            // locale経由で日本語化
             const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
-
-            // メインギアパワー（locale.ability）
             const primaryGearName = gear.primaryGearPower
-                ? locale.ability[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
+                ? locale.gear[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
                 : 'なし';
-
-            // ブランド名
             const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
 
             return {
                 name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                 value:
-                    `価格: ${item.price}ゲソ\n` +
+                    `価格: ${item.price}ゲソ\n` + // ← 単位を「ゲソ」に変更
                     `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
                     `メインギアパワー: ${primaryGearName}\n` +
                     `ブランド: ${brandName}`
@@ -86,7 +82,6 @@ module.exports = {
         };
 
         if (type === 'normal') {
-            // 通常販売 → limitedGears
             const items = gearData.data.gesotown.limitedGears || [];
             if (items.length === 0) {
                 return interaction.editReply('現在、通常販売のギアはありません。');
@@ -100,7 +95,6 @@ module.exports = {
             embeds.push(embed);
 
         } else if (type === 'pickup') {
-            // ピックアップ販売 → pickupBrand.brandGears
             const pickup = gearData.data.gesotown.pickupBrand;
             if (!pickup || !pickup.brandGears || pickup.brandGears.length === 0) {
                 return interaction.editReply('現在、ピックアップ販売はありません。');
