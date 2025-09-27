@@ -37,5 +37,14 @@ module.exports = async (client, message, args) => {
     .setTimestamp()
     .setColor(0x00AE86);
 
-  await message.channel.send({ embeds: [embed] });
+  // 固定送信先チャンネルID（ここを設定してください）
+  const CHANNEL_ID = '1421497191758954526'; 
+
+  const targetChannel = client.channels.cache.get(CHANNEL_ID);
+  if (!targetChannel) {
+    return message.reply('送信先チャンネルが見つかりませんでした。');
+  }
+
+  await targetChannel.send({ embeds: [embed] });
+  await message.reply('アナウンスを送信しました。');
 };
