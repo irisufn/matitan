@@ -51,7 +51,7 @@ module.exports = async (client, message, args) => {
   const announceEmbed = new EmbedBuilder()
     .setTitle(title)
     .setDescription(description) // ← \n で改行可能
-    .setFooter({ text: `送信者: ${name}`, iconURL: avatarURL })
+    .setFooter({ text: `${name}`, iconURL: avatarURL })
     .setTimestamp()
     .setColor(color);
 
