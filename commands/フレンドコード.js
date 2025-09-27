@@ -7,7 +7,7 @@ module.exports = {
 
   async execute(interaction) {
     const TARGET_CHANNEL_ID = '1395595186847092827'; //フレンドコード投稿用チャンネルID
-    const GUIDE_CHANNEL_ID = '1420395483247018155'; //問い合わせ送信先チャンネルID
+    const GUIDE_CHANNEL_ID = '1395595186847092827'; //問い合わせ送信先チャンネルID
 
     try {
       const channel = interaction.client.channels.cache.get(TARGET_CHANNEL_ID);
