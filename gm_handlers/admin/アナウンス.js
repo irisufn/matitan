@@ -19,14 +19,34 @@ module.exports = async (client, message, args) => {
     return;
   }
 
-  // 引数がない場合は処理しない
-  if (args.length < 2) {
-    return message.reply('アナウンス内容を入力してください。');
+  // 引数不足チェック
+  // args[0] = "アナウンス"
+  // args[1] = チャンネルID
+  // args[2] = カラーコード
+  // args[3]以降 = 本文
+  if (args.length < 4) {
+    return message.reply('使い方: `!adm アナウンス [チャンネルID] [カラーコード] [本文...]`');
   }
 
-  // args[0]はコマンド名（アナウンス）なので、それ以降を結合
-  const content = args.slice(1).join(' ');
+  const channelId = args[1];
+  const colorInput = args[2];
+  const content = args.slice(3).join(' ');
 
+  // チャンネル取得
+  const targetChannel = client.channels.cache.get(channelId);
+  if (!targetChannel) {
+    return message.reply('指定されたチャンネルが見つかりません。');
+  }
+
+  // カラーコード変換
+  let color = 0x00AE86; // デフォルト色
+  try {
+    color = parseInt(colorInput.replace('#', ''), 16);
+  } catch {
+    return message.reply('カラーコードの形式が正しくありません。例: `#00AE86`');
+  }
+
+  // Embed作成
   const embed = new EmbedBuilder()
     .setTitle('アナウンス')
     .setDescription(content)
@@ -35,15 +55,7 @@ module.exports = async (client, message, args) => {
       iconURL: client.user.displayAvatarURL({ dynamic: true }),
     })
     .setTimestamp()
-    .setColor(0x00AE86);
-
-  // 固定送信先チャンネルID（ここを設定してください）
-  const CHANNEL_ID = '1421497191758954526'; 
-
-  const targetChannel = client.channels.cache.get(CHANNEL_ID);
-  if (!targetChannel) {
-    return message.reply('送信先チャンネルが見つかりませんでした。');
-  }
+    .setColor(color);
 
   await targetChannel.send({ embeds: [embed] });
   await message.reply('アナウンスを送信しました。');
