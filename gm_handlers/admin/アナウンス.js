@@ -20,10 +20,6 @@ module.exports = async (client, message, args) => {
   }
 
   // 引数チェック
-  // args[0] = "アナウンス"
-  // args[1] = カラーコード
-  // args[2] = タイトル
-  // args[3]以降 = 説明
   if (args.length < 4) {
     return message.reply('引数が不足しています。');
   }
@@ -37,7 +33,7 @@ module.exports = async (client, message, args) => {
 
   // カラーコード変換
   const colorInput = args[1];
-  let color = 0x00AE86; // デフォルト色
+  let color = 0x00AE86;
   try {
     color = parseInt(colorInput.replace('#', ''), 16);
   } catch {
@@ -51,14 +47,31 @@ module.exports = async (client, message, args) => {
   const displayName = message.member?.nickname || message.author.username;
   const avatarURL = message.author.displayAvatarURL({ dynamic: true });
 
-  // Embed作成
-  const embed = new EmbedBuilder()
+  // アナウンス用Embed
+  const announceEmbed = new EmbedBuilder()
     .setTitle(title)
     .setDescription(description)
     .setAuthor({ name: displayName, iconURL: avatarURL })
     .setTimestamp()
     .setColor(color);
 
-  await targetChannel.send({ embeds: [embed] });
-  await message.reply('アナウンスを送信しました。');
+  // コマンドメッセージ削除
+  try {
+    await message.delete();
+  } catch (err) {
+    console.error('元メッセージ削除に失敗:', err);
+  }
+
+  // 固定チャンネルへ送信
+  await targetChannel.send({ embeds: [announceEmbed] });
+
+  // 完了通知用Embed
+  const doneEmbed = new EmbedBuilder()
+    .setTitle('✅ アナウンス送信完了')
+    .setDescription(`チャンネル <#${CHANNEL_ID}> にアナウンスを送信しました。`)
+    .setColor(0x00ff00)
+    .setTimestamp();
+
+  // 元メッセージがあったチャンネルに通知
+  await message.channel.send({ embeds: [doneEmbed] });
 };
