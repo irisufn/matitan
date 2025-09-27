@@ -103,8 +103,8 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
                 .setColor('#ed751f')
-                .setImage(pickup.image.url) // ← pickupBrand.image.url をセット
-                .setThumbnail(pickup.brand.image.url); // ← pickupBrand.brand.image.url をサムネイルに
+                .setImage(pickupBrand.image.url) // ← pickupBrand.image.url をセット
+                .setThumbnail(pickupBrand.brand.usualGearPower.image.url); // ← pickupBrand.brand.image.url をサムネイルに
 
             embed.addFields(pickup.brandGears.map(processItem));
             embeds.push(embed);
