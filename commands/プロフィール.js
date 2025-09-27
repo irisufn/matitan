@@ -33,7 +33,7 @@ module.exports = {
 
       embed.addFields({ name: 'ロール', value: roles, inline: false });
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await interaction.reply({ embeds: [embed], ephemeral: false });
     } catch (error) {
       console.error(error);
       if (!interaction.deferred && !interaction.replied) {

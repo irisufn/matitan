@@ -25,7 +25,7 @@ module.exports = async (client, message, args) => {
   }
 
   // 固定送信先チャンネルID
-  const CHANNEL_ID = '1421497191758954526';
+  const CHANNEL_ID = '1394103316526661632';　 // アナウンス送信先チャンネルIDを指定
   const targetChannel = client.channels.cache.get(CHANNEL_ID);
   if (!targetChannel) {
     return message.reply('送信先チャンネルが見つかりませんでした。');

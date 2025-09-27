@@ -34,6 +34,6 @@ module.exports = {
                     .setURL('https://matitan.onrender.com/index.html')
             );
 
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [row], ephemeral: false });
     },
 };

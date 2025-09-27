@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
-const CHANNEL_ID = '1420404689991762060'; // 通知用チャンネルID
-const ROLE_ID = '1421125163797319720';    // ←付与したいロールIDを設定
+const CHANNEL_ID = '1405896232647266384'; // 通知用チャンネルID
+const ROLE_ID = '1398719394049298472';    // ←付与したいロールIDを設定
 
 module.exports = [
   {

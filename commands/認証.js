@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const config = require('../config.json');
 
 // 定数
-const ROLE_ID = '1419297290824450058'; // 付与するロールのID
+const ROLE_ID = '0000000000000000000'; // 認証ロールのID
 const REQUIRED_PERMISSIONS = PermissionsBitField.Flags.ManageRoles; // ボットに要求される権限
 
 async function sendErrorLog(guild, user, role, title, description, error = null) {
