@@ -10,8 +10,7 @@ module.exports = {
                 .setRequired(true)
                 .addChoices(
                     { name: 'バグ報告', value: 'バグ報告' },
-                    { name: 'ヘルプ', value: 'ヘルプ' },
-                    { name: '要望', value: '要望' }
+                    { name: 'ヘルプ', value: 'ヘルプ' }
                 )
         )
         .addStringOption(option =>
