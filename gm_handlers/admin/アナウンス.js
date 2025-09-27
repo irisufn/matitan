@@ -23,7 +23,7 @@ module.exports = async (client, message, args) => {
     return message.reply('引数が不足しています。');
   }
 
-  const CHANNEL_ID = '1394103316526661632';
+  const CHANNEL_ID = '1421497191758954526'; // 送信先チャンネルID
   const targetChannel = client.channels.cache.get(CHANNEL_ID);
   if (!targetChannel) {
     return message.reply('送信先チャンネルが見つかりませんでした。');
