@@ -6,7 +6,7 @@ module.exports = {
     .setDescription('フレンドコードを表示'),
 
   async execute(interaction) {
-    const TARGET_CHANNEL_ID = '1420393502293889165'; //フレンドコード投稿用チャンネルID
+    const TARGET_CHANNEL_ID = '1395595186847092827'; //フレンドコード投稿用チャンネルID
     const GUIDE_CHANNEL_ID = '1420395483247018155'; //問い合わせ送信先チャンネルID
 
     try {
