@@ -79,17 +79,24 @@ module.exports = {
         const modeData = MODES.find(m => m.value === modeValue);
         const modeTitle = modeData ? modeData.title : '不明なモード';
 
-        let apiUrl = '';
+        let apiUrl;
+        let useSchedule = false;
+
         if (modeValue.includes('coop-grouping') || modeValue === 'event') {
             apiUrl = `${BASE_URL}${modeValue}/schedule`;
+            useSchedule = true;
         } else {
-            apiUrl = `${BASE_URL}${modeValue}/now`;
+            if (timeValue === 'now' || timeValue === 'next') {
+                apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
+            } else if (timeValue === 'next2') {
+                apiUrl = `${BASE_URL}${modeValue}/schedule`;
+                useSchedule = true;
+            }
         }
 
         try {
             const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             let results = response.data.results;
-
             if (!results || results.length === 0) {
                 const emptyEmbed = new EmbedBuilder()
                     .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
@@ -99,11 +106,15 @@ module.exports = {
                 return;
             }
 
-            // 現在/次/次の次を取得
-            let index = 0;
-            if (timeValue === 'next') index = 1;
-            else if (timeValue === 'next2') index = 2;
-            const info = results[index] || results[results.length - 1];
+            let info;
+            if (useSchedule) {
+                let index = 0;
+                if (timeValue === 'next') index = 1;
+                else if (timeValue === 'next2') index = 2;
+                info = results[index] || results[results.length - 1];
+            } else {
+                info = results[0];
+            }
 
             const isCoopMode = modeValue.includes('coop-grouping');
             const embed = new EmbedBuilder();
