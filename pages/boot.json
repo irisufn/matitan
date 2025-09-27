@@ -1,0 +1,29 @@
+{
+    "Status": "online",
+    "lastUpdated": "2024-12-19T14:30:00Z",
+    "services": {
+        "core": "online",
+        "commands": "online",
+        "gameAPI": "online",
+        "database": "online"
+    },
+    "systemInfo": {
+        "version": "2.1.0",
+        "uptime": "7 days, 14 hours, 23 minutes",
+        "serverLocation": "Tokyo, Japan",
+        "responseTime": "25ms"
+    },
+    "maintenanceSchedule": {
+        "nextMaintenance": "2024-12-26T02:00:00Z",
+        "duration": "2 hours",
+        "description": "定期システムアップデート"
+    },
+    "features": {
+        "pingCommand": true,
+        "gesotown": true,
+        "stageInfo": true,
+        "friendCode": true,
+        "profile": true,
+        "authentication": true
+    }
+}

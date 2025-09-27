@@ -1,233 +1,409 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BotName — 公式サイト</title>
-  <meta name="description" content="BotName の公式ページ。コマンド一覧・使い方・導入方法を掲載しています。" />
-  <style>
-    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#6ee7b7}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,Segoe UI,Roboto,"Helvetica Neue",Arial; background:linear-gradient(180deg,#071028 0%, #071827 100%);color:#e6eef6}
-    .container{max-width:1100px;margin:36px auto;padding:24px}
-    header{display:flex;align-items:center;gap:16px}
-    .brand{display:flex;flex-direction:column}
-    h1{margin:0;font-size:20px}
-    p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
-    nav{margin-top:18px;display:flex;gap:8px}
-    .navbtn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
-    .navbtn.active{border-color:var(--accent);color:var(--accent)}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord BOT - ホーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    main{display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:22px}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:18px;border-radius:14px}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #2d2d2d;
+            line-height: 1.6;
+        }
 
-    .hero{padding:28px}
-    .row{display:flex;gap:12px;align-items:center}
-    .cta{margin-top:18px}
-    .btn{background:var(--accent);color:#062524;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+        /* ナビゲーションバー */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e5e5e5;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
 
-    .commands-list{display:grid;gap:10px}
-    .cmd{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:rgba(0,0,0,0.15);cursor:pointer}
-    .cmd .meta{color:var(--muted);font-size:13px}
-    .cmd:hover{transform:translateY(-2px)}
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-    .detail{margin-top:12px}
-    pre{background:#071827;padding:12px;border-radius:8px;overflow:auto}
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
 
-    aside .card{position:sticky;top:24px}
-    footer{margin-top:36px;text-align:center;color:var(--muted);font-size:13px}
+        .menu-toggle {
+            background: #2d2d2d;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    /* responsive */
-    @media(max-width:980px){main{grid-template-columns:1fr}aside{order:2}}
+        .menu-toggle:hover {
+            background: #1a1a1a;
+            transform: translateY(-1px);
+        }
 
-    /* simple modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;padding:20px}
-    .modal.show{display:flex}
-    .modal .panel{width:100%;max-width:820px}
-  </style>
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hamburger span {
+            width: 16px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(1) {
+            transform: rotate(45deg) translate(4px, 4px);
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(3) {
+            transform: rotate(-45deg) translate(4px, -4px);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e5e5e5;
+            min-width: 200px;
+            opacity: 0;
+            transform: translateY(-8px);
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #2d2d2d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px;
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 700;
+            color: #2d2d2d;
+            margin-bottom: 24px;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+        }
+
+        .hero-button {
+            background: #2d2d2d;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .hero-button:hover {
+            background: #1a1a1a;
+            transform: translateY(-2px);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            margin-top: 80px;
+        }
+
+        .feature-card {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+            border-color: #d1d5db;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: #2d2d2d;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .feature-description {
+            color: #6b7280;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .stats-section {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 48px;
+            margin: 80px 0;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+            margin-top: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d2d2d;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 48px 16px;
+            }
+
+            .hero-title {
+                font-size: 40px;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+                gap: 24px;
+                margin-top: 48px;
+            }
+
+            .feature-card {
+                padding: 24px;
+            }
+
+            .stats-section {
+                padding: 32px 20px;
+                margin: 48px 0;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div style="width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,#6ee7b7,#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#062524">B</div>
-      <div class="brand">
-        <h1>BotName — 公式サイト</h1>
-        <p class="lead">Discord 向けユーティリティ & コミュニティ管理ボット。導入、設定、コマンドの使い方を分かりやすく。</p>
-      </div>
-    </header>
-
-    <nav>
-      <button id="nav-home" class="navbtn active">ホーム</button>
-      <button id="nav-commands" class="navbtn">スラッシュコマンド</button>
-      <a href="#" class="navbtn" onclick="alert('このリンクはデモです。')">サポートサーバー</a>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Discord BOT</a>
+            <button class="menu-toggle" onclick="toggleMenu()">
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                メニュー
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <a href="index.html" class="dropdown-item">
+                    <span>🏠</span>
+                    Home
+                </a>
+                <a href="commands.html" class="dropdown-item">
+                    <span>⚡</span>
+                    コマンド
+                </a>
+                <a href="support.html" class="dropdown-item">
+                    <span>❓</span>
+                    サポート / ヘルプ
+                </a>
+                <a href="status.html" class="dropdown-item">
+                    <span>📊</span>
+                    起動状況
+                </a>
+            </div>
+        </div>
     </nav>
 
-    <main>
-      <section id="page-home" class="card hero">
-        <h2>ようこそ — BotName</h2>
-        <p class="lead">BotName はサーバー管理を楽にする高機能ボットです。スラッシュコマンドを通して簡単に操作できます。以下のボタンで導入方法やコマンドを確認してください。</p>
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <section class="hero-section">
+            <h1 class="hero-title">Discord BOT</h1>
+            <p class="hero-subtitle">
+                あなたのDiscordサーバーをより楽しく、便利にする多機能BOTです。
+                様々なコマンドとゲーム機能で、コミュニティを盛り上げましょう。
+            </p>
+            <a href="commands.html" class="hero-button">コマンドを見る</a>
+        </section>
 
-        <div class="row cta">
-          <button class="btn" onclick="installGuide()">導入ガイドを見る</button>
-          <button class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)" onclick="showCommands()">コマンド一覧</button>
-        </div>
+        <section class="stats-section">
+            <h2 style="font-size: 28px; font-weight: 600; color: #2d2d2d; margin-bottom: 8px;">信頼される実績</h2>
+            <p style="color: #6b7280; margin-bottom: 0;">多くのコミュニティで愛用されています</p>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">1,000+</div>
+                    <div class="stat-label">アクティブサーバー</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">50,000+</div>
+                    <div class="stat-label">月間ユーザー</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">99.9%</div>
+                    <div class="stat-label">稼働率</div>
+                </div>
+            </div>
+        </section>
 
-        <div style="margin-top:20px" class="card">
-          <h3>導入(簡単)</h3>
-          <ol>
-            <li>Bot の招待リンクを作成（管理者権限は不要。必要な権限のみ付与）</li>
-            <li>招待リンクからサーバーに追加</li>
-            <li>/認証 など初期コマンドを実行して設定</li>
-          </ol>
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🎮</div>
+                <h3 class="feature-title">ゲーム機能</h3>
+                <p class="feature-description">
+                    ゲソタウンやステージ情報など、ゲーム関連の情報を簡単に取得できます。フレンドコードの管理も可能です。
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">多彩なコマンド</h3>
+                <p class="feature-description">
+                    ping、プロフィール機能、認証システムなど、様々な用途に対応したコマンドを提供しています。
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛠️</div>
+                <h3 class="feature-title">充実のサポート</h3>
+                <p class="feature-description">
+                    使い方がわからない時でも安心。詳細なヘルプとサポートで、すぐに問題を解決できます。
+                </p>
+            </div>
         </div>
-
-        <div class="card detail">
-          <h3>よくある質問</h3>
-          <p><strong>Q:</strong> Bot は無料ですか？<br><strong>A:</strong> はい、基本機能は無料で使えます。</p>
-          <p><strong>Q:</strong> 日本語は対応していますか？<br><strong>A:</strong> はい、日本語でのコマンド応答に対応しています。</p>
-        </div>
-      </section>
-
-      <aside>
-        <div class="card">
-          <h3>スラッシュコマンド</h3>
-          <p class="meta">以下をクリックすると詳細が表示されます。</p>
-          <div class="commands-list" id="commands-list">
-            <div class="cmd" data-cmd="ping"><div><strong>/ping</strong><div class="meta">Bot の応答速度を計測</div></div><div>詳細</div></div>
-            <div class="cmd" data-cmd="auth"><div><strong>/認証</strong><div class="meta">サーバー認証・参加手続き</div></div><div>詳細</div></div>
-            <div class="cmd" data-cmd="profile"><div><strong>/プロフィール</strong><div class="meta">ユーザーのプロフィール表示</div></div><div>詳細</div></div>
-            <div class="cmd" data-cmd="friendcode"><div><strong>/フレンドコード</strong><div class="meta">フレンドコード登録・表示</div></div><div>詳細</div></div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <h4>サポート</h4>
-          <p class="meta">問題が起きたらサポートサーバーへ。招待リンクはダッシュボードから取得できます。</p>
-        </div>
-      </aside>
     </main>
 
-    <footer>
-      © BotName • 作成者: あなたの名前
-    </footer>
-  </div>
+    <script>
+        function toggleMenu() {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            menuToggle.classList.toggle('active');
+            dropdownMenu.classList.toggle('active');
+        }
 
-  <!-- モーダル（コマンド詳細） -->
-  <div id="modal" class="modal" aria-hidden="true">
-    <div class="panel card" role="dialog" aria-modal="true">
-      <button style="float:right;background:transparent;border:none;color:var(--muted);cursor:pointer" onclick="closeModal()">閉じる ✕</button>
-      <div id="modal-content"></div>
-    </div>
-  </div>
-
-  <script>
-    // シンプルなページ切替
-    const navHome = document.getElementById('nav-home');
-    const navCommands = document.getElementById('nav-commands');
-    const pageHome = document.getElementById('page-home');
-
-    navHome.addEventListener('click', ()=>{navHome.classList.add('active');navCommands.classList.remove('active');pageHome.style.display='block'});
-    navCommands.addEventListener('click', ()=>{navCommands.classList.add('active');navHome.classList.remove('active');showCommandsPanel()});
-
-    function installGuide(){alert('導入ガイド:\n1) 招待リンクで追加 2) 必要な権限を付与 3) /認証 を実行');}
-
-    // コマンド詳細データ
-    const COMMANDS = {
-      ping: {
-        name: '/ping',
-        summary: 'Bot の応答時間（ミリ秒）を計測して Embed 形式で表示します。',
-        usage: '/ping',
-        description: `- Bot 側の API レイテンシ（Bot → Discord WebSocket の応答）と、コマンド応答の往復時間を計測して表示します。\n- 実装例では複数回（例:5回）計測し、平均や最小/最大を出力すると安定します。\n- -1ms が出るケースは、Date.now() の差分計算や DNS / ネットワークのタイミングで負の値が出ることがあるため、負の値は 0 にクランプするか再計測してください。`,
-        example: `Embed 例:\nタイトル: Ping\nフィールド: Bot API: 42ms (WebSocket), Roundtrip: 48ms\n注意: 計測中は deferred reply を使うことでユーザーへ "計測中..." を表示できます。`
-      },
-      auth: {
-        name: '/認証',
-        summary: 'サーバー参加者の認証フロー。役職付与や試行回数管理が行えます。',
-        usage: '/認証 [ユーザー] [コード]',
-        description: `- 役職（role）を付与して認証済みメンバーにするフローを想定。\n- 試行回数の管理、失敗時のメッセージ出力、タイムアウトを組み合わせて実装します。\n- 古い実装で authData を外部ファイルに保存していた場合は、現在の設計では認証情報.jsonの廃止や試行回数リセットに注意して下さい。`,
-        example: `成功時: "認証完了 — 役職を付与しました"\n失敗時: "認証コードが違います。残り試行回数: 2"`
-      },
-      profile: {
-        name: '/プロフィール',
-        summary: 'ユーザーのプロフィール情報（作成日、参加日、ロール等）を Embed で表示します。',
-        usage: '/プロフィール [@ユーザー]',
-        description: `- 表示項目例: ユーザー名、タグ、ID、アカウント作成日、サーバー参加日、付与ロール、ステータス、カスタムステータス等。\n- Bot は Discord v14 以降の EmbedBuilder を利用する実装が推奨されます。`,
-        example: `Embed 例:\nタイトル: ユーザー名\nフィールド: ID, 作成日, 参加日, ロールリスト\nサムネ: ユーザーのアバター画像`
-      },
-      friendcode: {
-        name: '/フレンドコード',
-        summary: 'ゲームのフレンドコードを登録・表示するためのコマンド。',
-        usage: '/フレンドコード 登録|表示 [コード]',
-        description: `- コード登録: ユーザー固有の DB (JSON / DB) にコードを保存。プライバシーに注意して公開範囲を設定可能にすると親切です。\n- 他ユーザーが表示する際は opt-in のみ表示するように設計すると安全です。`,
-        example: `例: /フレンドコード 登録 SW-1234-5678-9012\n表示: /フレンドコード 表示 @user` 
-      }
-    };
-
-    // 右側リストクリックでモーダル表示
-    document.querySelectorAll('.cmd').forEach(el=>{
-      el.addEventListener('click', ()=>{
-        const key = el.dataset.cmd;
-        openModalFor(key);
-      });
-    });
-
-    function openModalFor(key){
-      const data = COMMANDS[key];
-      const content = document.getElementById('modal-content');
-      content.innerHTML = `
-        <h2>${data.name}</h2>
-        <p class="meta">${data.summary}</p>
-        <h3>使い方</h3>
-        <pre>${escapeHtml(data.usage)}</pre>
-        <h3>説明</h3>
-        <p>${nl2br(escapeHtml(data.description))}</p>
-        <h3>サンプル</h3>
-        <pre>${escapeHtml(data.example)}</pre>
-        <div style="margin-top:12px"><button class="btn" onclick="copyExample('${key}')">サンプルをコピー</button></div>
-      `;
-      document.getElementById('modal').classList.add('show');
-      document.getElementById('modal').setAttribute('aria-hidden','false');
-    }
-
-    function closeModal(){document.getElementById('modal').classList.remove('show');document.getElementById('modal').setAttribute('aria-hidden','true');}
-
-    function showCommands(){navCommands.classList.add('active');navHome.classList.remove('active');showCommandsPanel();}
-    function showCommandsPanel(){
-      // ページ内でコマンド一覧を表示 — 下に詳細パネルを挿入
-      pageHome.scrollIntoView({behavior:'smooth'});
-      const panel = document.createElement('div');
-      panel.className='card';
-      panel.innerHTML = `<h2>スラッシュコマンド一覧</h2><p class="meta">以下をクリックして詳細を確認してください。</p>`;
-      const list = document.createElement('div');
-      list.className='commands-list';
-      Object.keys(COMMANDS).forEach(k=>{
-        const d = COMMANDS[k];
-        const item = document.createElement('div');
-        item.className='cmd';
-        item.innerHTML = `<div><strong>${d.name}</strong><div class="meta">${d.summary}</div></div><div>詳細</div>`;
-        item.addEventListener('click',()=>openModalFor(k));
-        list.appendChild(item);
-      });
-      panel.appendChild(list);
-      // modal が既にある場合は差し替え
-      // 一度だけ追加する
-      const existing = document.getElementById('commands-panel');
-      if(existing) existing.replaceWith(panel);
-      else {panel.id='commands-panel'; pageHome.appendChild(panel);}
-    }
-
-    // ユーティリティ
-    function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-    function nl2br(s){return s.replace(/\\n/g,'<br>')}
-    function copyExample(key){
-      const ex = COMMANDS[key].example;
-      navigator.clipboard?.writeText(ex).then(()=>alert('サンプルをコピーしました'))
-    }
-
-    // モーダル外クリックで閉じる
-    document.getElementById('modal').addEventListener('click', (e)=>{ if(e.target.id==='modal') closeModal(); });
-
-    // 初期ロード: commands-panel は未表示
-  </script>
+        // メニュー外をクリックしたら閉じる
+        document.addEventListener('click', function(event) {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (!menuToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                menuToggle.classList.remove('active');
+                dropdownMenu.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>

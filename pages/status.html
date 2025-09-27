@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord BOT - 起動状況</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #2d2d2d;
+            line-height: 1.6;
+        }
+
+        /* ナビゲーションバー */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e5e5e5;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .menu-toggle {
+            background: #2d2d2d;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-toggle:hover {
+            background: #1a1a1a;
+            transform: translateY(-1px);
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hamburger span {
+            width: 16px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(1) {
+            transform: rotate(45deg) translate(4px, 4px);
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(3) {
+            transform: rotate(-45deg) translate(4px, -4px);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e5e5e5;
+            min-width: 200px;
+            opacity: 0;
+            transform: translateY(-8px);
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #2d2d2d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2d2d2d;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* ステータス表示 */
+        .status-overview {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+
+        .status-indicator.offline {
+            background: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: none;
+        }
+
+        .status-indicator.maintenance {
+            background: #f59e0b;
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+        }
+
+        .status-indicator.degraded {
+            background: #f97316;
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .status-text {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .status-text.online {
+            color: #10b981;
+        }
+
+        .status-text.offline {
+            color: #ef4444;
+        }
+
+        .status-text.maintenance {
+            color: #f59e0b;
+        }
+
+        .status-text.degraded {
+            color: #f97316;
+        }
+
+        .status-description {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .last-updated {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* サービス詳細 */
+        .services-section {
+            margin-top: 32px;
+        }
+
+        .services-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .services-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .service-item {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .service-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .service-icon.online {
+            background: #10b981;
+        }
+
+        .service-icon.offline {
+            background: #ef4444;
+        }
+
+        .service-icon.maintenance {
+            background: #f59e0b;
+        }
+
+        .service-icon.degraded {
+            background: #f97316;
+        }
+
+        .service-name {
+            font-weight: 500;
+            color: #2d2d2d;
+        }
+
+        .service-status {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .service-status.online {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .service-status.offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .service-status.maintenance {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .service-status.degraded {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        /* 履歴セクション */
+        .history-section {
+            margin-top: 40px;
+        }
+
+        .history-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            margin-bottom: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .history-list {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .history-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            gap: 16px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 8px;
+            flex-shrink: 0;
+        }
+
+        .history-content {
+            flex: 1;
+        }
+
+        .history-message {
+            color: #2d2d2d;
+            margin-bottom: 4px;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 32px 16px;
+            }
+
+            .page-title {
+                font-size: 28px;
+            }
+
+            .status-overview {
+                padding: 24px 20px;
+            }
+
+            .status-indicator {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            .status-text {
+                font-size: 20px;
+            }
+
+            .service-item {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Discord BOT</a>
+            <button class="menu-toggle" onclick="toggleMenu()">
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                メニュー
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <a href="index.html" class="dropdown-item">
+                    <span>🏠</span>
+                    Home
+                </a>
+                <a href="commands.html" class="dropdown-item">
+                    <span>⚡</span>
+                    コマンド
+                </a>
+                <a href="support.html" class="dropdown-item">
+                    <span>❓</span>
+                    サポート / ヘルプ
+                </a>
+                <a href="status.html" class="dropdown-item">
+                    <span>📊</span>
+                    起動状況
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">起動状況</h1>
+            <p class="page-subtitle">BOTの現在の稼働状況をリアルタイムで確認できます</p>
+        </div>
+
+        <!-- ステータス概要 -->
+        <div class="status-overview">
+            <div class="status-indicator" id="statusIndicator">
+                <span id="statusEmoji">🟢</span>
+            </div>
+            <div class="status-text" id="statusText">オンライン</div>
+            <div class="status-description" id="statusDescription">すべてのサービスが正常に稼働しています</div>
+            <div class="last-updated">最終更新: <span id="lastUpdated">2024年12月19日 14:30</span></div>
+        </div>
+
+        <!-- サービス詳細 -->
+        <div class="services-section">
+            <h2 class="services-title">サービス状況</h2>
+            <div class="services-list">
+                <div class="service-item">
+                    <div class="service-info">
+                        <div class="service-icon" id="coreServiceIcon"></div>
+                        <div class="service-name">コアサービス</div>
+                    </div>
+                    <div class="service-status" id="coreServiceStatus">オンライン</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-info">
+                        <div class="service-icon" id="commandServiceIcon"></div>
+                        <div class="service-name">コマンド処理</div>
+                    </div>
+                    <div class="service-status" id="commandServiceStatus">オンライン</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-info">
+                        <div class="service-icon" id="gameServiceIcon"></div>
+                        <div class="service-name">ゲーム情報取得</div>
+                    </div>
+                    <div class="service-status" id="gameServiceStatus">オンライン</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-info">
+                        <div class="service-icon" id="databaseServiceIcon"></div>
+                        <div class="service-name">データベース</div>
+                    </div>
+                    <div class="service-status" id="databaseServiceStatus">オンライン</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 履歴セクション -->
+        <div class="history-section">
+            <h2 class="history-title">ステータス履歴</h2>
+            <div class="history-list">
+                <div class="history-item">
+                    <div class="history-icon online"></div>
+                    <div class="history-content">
+                        <div class="history-message">メンテナンスが完了し、全サービスが復旧しました</div>
+                        <div class="history-time">2024年12月19日 14:00</div>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-icon maintenance"></div>
+                    <div class="history-content">
+                        <div class="history-message">定期メンテナンスを開始しました</div>
+                        <div class="history-time">2024年12月19日 13:00</div>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-icon degraded"></div>
+                    <div class="history-content">
+                        <div class="history-message">ゲーム情報取得APIで一時的な遅延が発生しました</div>
+                        <div class="history-time">2024年12月18日 16:30</div>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-icon online"></div>
+                    <div class="history-content">
+                        <div class="history-message">API遅延が解消され、正常稼働に復旧しました</div>
+                        <div class="history-time">2024年12月18日 17:15</div>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-icon online"></div>
+                    <div class="history-content">
+                        <div class="history-message">新機能「プロフィール管理」がリリースされました</div>
+                        <div class="history-time">2024年12月15日 10:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // boot.jsonファイルを読み込んでステータスを更新する関数
+        async function loadBotStatus() {
+            try {
+                // boot.jsonファイルの内容（実際のファイルがない場合のサンプルデータ）
+                const sampleBootData = {
+                    "Status": "online",
+                    "lastUpdated": "2024-12-19T14:30:00Z",
+                    "services": {
+                        "core": "online",
+                        "commands": "online",
+                        "gameAPI": "online",
+                        "database": "online"
+                    }
+                };
+
+                // 実際の実装では以下のようにファイルを読み込む
+                // const response = await fetch('boot.json');
+                // const bootData = await response.json();
+                
+                // サンプルデータを使用
+                const bootData = sampleBootData;
+                updateStatus(bootData.Status);
+                updateServices(bootData.services);
+                updateLastUpdated(bootData.lastUpdated);
+            } catch (error) {
+                console.error('ステータスの読み込みに失敗しました:', error);
+                // エラー時はオフライン状態として表示
+                updateStatus('offline');
+            }
+        }
+
+        function updateStatus(status) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const statusDescription = document.getElementById('statusDescription');
+            const statusEmoji = document.getElementById('statusEmoji');
+
+            // 既存のクラスをリセット
+            statusIndicator.className = 'status-indicator';
+            statusText.className = 'status-text';
+
+            switch(status) {
+                case 'online':
+                    statusIndicator.classList.add('online');
+                    statusText.classList.add('online');
+                    statusText.textContent = 'オンライン';
+                    statusDescription.textContent = 'すべてのサービスが正常に稼働しています';
+                    statusEmoji.textContent = '🟢';
+                    break;
+                case 'down':
+                    statusIndicator.classList.add('offline');
+                    statusText.classList.add('offline');
+                    statusText.textContent = 'オフライン';
+                    statusDescription.textContent = 'BOTは現在オフラインです';
+                    statusEmoji.textContent = '🔴';
+                    break;
+                case 'Maint':
+                    statusIndicator.classList.add('maintenance');
+                    statusText.classList.add('maintenance');
+                    statusText.textContent = 'メンテナンス中';
+                    statusDescription.textContent = 'システムメンテナンスを実施しています';
+                    statusEmoji.textContent = '🟡';
+                    break;
+                case 'online_2':
+                    statusIndicator.classList.add('degraded');
+                    statusText.classList.add('degraded');
+                    statusText.textContent = 'オンライン (一部障害発生中)';
+                    statusDescription.textContent = '一部のサービスで問題が発生していますが、基本機能は利用可能です';
+                    statusEmoji.textContent = '🟠';
+                    break;
+                default:
+                    statusIndicator.classList.add('offline');
+                    statusText.classList.add('offline');
+                    statusText.textContent = 'ステータス不明';
+                    statusDescription.textContent = 'ステータス情報を取得できませんでした';
+                    statusEmoji.textContent = '❓';
+            }
+        }
+
+        function updateServices(services) {
+            updateServiceStatus('coreServiceIcon', 'coreServiceStatus', services.core);
+            updateServiceStatus('commandServiceIcon', 'commandServiceStatus', services.commands);
+            updateServiceStatus('gameServiceIcon', 'gameServiceStatus', services.gameAPI);
+            updateServiceStatus('databaseServiceIcon', 'databaseServiceStatus', services.database);
+        }
+
+        function updateServiceStatus(iconId, statusId, status) {
+            const icon = document.getElementById(iconId);
+            const statusElement = document.getElementById(statusId);
+
+            // クラスをリセット
+            icon.className = 'service-icon';
+            statusElement.className = 'service-status';
+
+            switch(status) {
+                case 'online':
+                    icon.classList.add('online');
+                    statusElement.classList.add('online');
+                    statusElement.textContent = 'オンライン';
+                    break;
+                case 'offline':
+                    icon.classList.add('offline');
+                    statusElement.classList.add('offline');
+                    statusElement.textContent = 'オフライン';
+                    break;
+                case 'maintenance':
+                    icon.classList.add('maintenance');
+                    statusElement.classList.add('maintenance');
+                    statusElement.textContent = 'メンテナンス中';
+                    break;
+                case 'degraded':
+                    icon.classList.add('degraded');
+                    statusElement.classList.add('degraded');
+                    statusElement.textContent = '一部障害';
+                    break;
+                default:
+                    icon.classList.add('offline');
+                    statusElement.classList.add('offline');
+                    statusElement.textContent = '不明';
+            }
+        }
+
+        function updateLastUpdated(timestamp) {
+            const lastUpdatedElement = document.getElementById('lastUpdated');
+            const date = new Date(timestamp);
+            const formattedDate = date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            lastUpdatedElement.textContent = formattedDate;
+        }
+
+        function toggleMenu() {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            menuToggle.classList.toggle('active');
+            dropdownMenu.classList.toggle('active');
+        }
+
+        // メニュー外をクリックしたら閉じる
+        document.addEventListener('click', function(event) {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (!menuToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                menuToggle.classList.remove('active');
+                dropdownMenu.classList.remove('active');
+            }
+        });
+
+        // ページロード時にステータスを読み込み
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBotStatus();
+            
+            // 30秒ごとにステータスを更新
+            setInterval(loadBotStatus, 30000);
+        });
+    </script>
+</body>
+</html>

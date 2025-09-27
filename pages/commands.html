@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord BOT - コマンド</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #2d2d2d;
+            line-height: 1.6;
+        }
+
+        /* ナビゲーションバー */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e5e5e5;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d2d2d;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .menu-toggle {
+            background: #2d2d2d;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-toggle:hover {
+            background: #1a1a1a;
+            transform: translateY(-1px);
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hamburger span {
+            width: 16px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(1) {
+            transform: rotate(45deg) translate(4px, 4px);
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active .hamburger span:nth-child(3) {
+            transform: rotate(-45deg) translate(4px, -4px);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e5e5e5;
+            min-width: 200px;
+            opacity: 0;
+            transform: translateY(-8px);
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #2d2d2d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2d2d2d;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .commands-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .command-card {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .command-card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .command-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: all 0.2s ease;
+        }
+
+        .command-header:hover {
+            background: #f5f5f5;
+        }
+
+        .command-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .command-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #2d2d2d;
+        }
+
+        .command-text {
+            color: #2d2d2d;
+        }
+
+        .command-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            letter-spacing: -0.02em;
+        }
+
+        .command-brief {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .expand-icon {
+            font-size: 20px;
+            color: #9ca3af;
+            transition: transform 0.2s ease;
+        }
+
+        .command-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .command-details {
+            padding: 0 24px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .command-card.expanded .command-details {
+            max-height: 600px;
+            padding: 24px;
+            opacity: 1;
+        }
+
+        .command-description {
+            color: #4b5563;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .command-usage {
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .usage-title {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .usage-text {
+            color: #2d2d2d;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .command-examples {
+            margin-top: 20px;
+        }
+
+        .examples-title {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .example-item {
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            color: #4b5563;
+            font-size: 13px;
+        }
+
+        .example-item:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 32px 16px;
+            }
+
+            .page-title {
+                font-size: 28px;
+            }
+
+            .command-header {
+                padding: 16px 20px;
+            }
+
+            .command-info {
+                gap: 12px;
+            }
+
+            .command-details {
+                padding: 0 20px;
+            }
+
+            .command-card.expanded .command-details {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Discord BOT</a>
+            <button class="menu-toggle" onclick="toggleMenu()">
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                メニュー
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <a href="index.html" class="dropdown-item">
+                    <span>🏠</span>
+                    Home
+                </a>
+                <a href="commands.html" class="dropdown-item">
+                    <span>⚡</span>
+                    コマンド
+                </a>
+                <a href="support.html" class="dropdown-item">
+                    <span>❓</span>
+                    サポート / ヘルプ
+                </a>
+                <a href="status.html" class="dropdown-item">
+                    <span>📊</span>
+                    起動状況
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">コマンド一覧</h1>
+            <p class="page-subtitle">利用可能なすべてのコマンドとその使用方法を確認できます</p>
+        </div>
+        
+        <div class="commands-container">
+            <!-- Ping コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">🏓</div>
+                        <div class="command-text">
+                            <div class="command-name">ping</div>
+                            <div class="command-brief">BOTの応答速度を確認</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        BOTの応答速度（レイテンシー）を測定し、接続状況を確認できます。サーバーとの通信品質をリアルタイムで確認する際に使用します。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/ping</div>
+                    </div>
+                    <div class="command-examples">
+                        <div class="examples-title">実行例</div>
+                        <div class="example-item">/ping → Pong! (応答時間: 25ms)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ゲソタウン コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">🦑</div>
+                        <div class="command-text">
+                            <div class="command-name">ゲソタウン</div>
+                            <div class="command-brief">ゲソタウンの情報を表示</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        現在のゲソタウンの状況やイベント情報を取得できます。ショップ情報やセール情報なども確認できます。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/gesotown [オプション]</div>
+                    </div>
+                    <div class="command-examples">
+                        <div class="examples-title">実行例</div>
+                        <div class="example-item">/gesotown → 現在の情報を表示</div>
+                        <div class="example-item">/gesotown event → イベント情報を表示</div>
+                        <div class="example-item">/gesotown shop → ショップ情報を表示</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ステージ情報 コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">🎯</div>
+                        <div class="command-text">
+                            <div class="command-name">ステージ情報</div>
+                            <div class="command-brief">現在のステージ情報を取得</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        現在のナワバリバトルやガチマッチのステージ情報を確認できます。今後のステージローテーション情報も表示されます。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/stage [モード]</div>
+                    </div>
+                    <div class="command-examples">
+                        <div class="examples-title">実行例</div>
+                        <div class="example-item">/stage → 全モードの情報を表示</div>
+                        <div class="example-item">/stage regular → ナワバリバトルのステージ</div>
+                        <div class="example-item">/stage ranked → ガチマッチのステージ</div>
+                        <div class="example-item">/stage league → リーグマッチのステージ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フレンドコード コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">👥</div>
+                        <div class="command-text">
+                            <div class="command-name">フレンドコード</div>
+                            <div class="command-brief">フレンドコードの管理</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        Nintendo Switch のフレンドコードを登録・表示・削除できます。他のユーザーとフレンド交換を
