@@ -19,19 +19,17 @@ module.exports = async (client, message, args) => {
     return;
   }
 
-  // 引数チェック
   if (args.length < 3) {
     return message.reply('引数が不足しています。');
   }
 
-  // 固定送信先チャンネルID
-  const CHANNEL_ID = '1394103316526661632';　 // アナウンス送信先チャンネルIDを指定
+  const CHANNEL_ID = '1394103316526661632';
   const targetChannel = client.channels.cache.get(CHANNEL_ID);
   if (!targetChannel) {
     return message.reply('送信先チャンネルが見つかりませんでした。');
   }
 
-  // カラーコード変換
+  // カラーコード
   const colorInput = args[1];
   let color = 0x00AE86;
   try {
@@ -41,37 +39,45 @@ module.exports = async (client, message, args) => {
   }
 
   const title = args[2];
-  const description = args.slice(3).join(' ').replace(/\\n/g, '\n');
+  let description = args.slice(3).join(' ').replace(/\\n/g, '\n');
 
-  // 表示名とアイコン
+  // @everyone の検知
+  let mentionEveryone = false;
+  if (description.includes('@everyone')) {
+    mentionEveryone = true;
+    description = description.replace(/@everyone/g, '').trim();
+  }
+
   const name = message.author.globalName || message.author.username;
   const avatarURL = message.author.displayAvatarURL({ dynamic: true });
 
-  // アナウンス用Embed
   const announceEmbed = new EmbedBuilder()
     .setTitle(title)
-    .setDescription(description) // ← \n で改行可能
-    .setFooter({ text: `${name}`, iconURL: avatarURL })
+    .setDescription(description)
+    .setFooter({ text: name, iconURL: avatarURL })
     .setTimestamp()
     .setColor(color);
 
-  // コマンドメッセージ削除
   try {
     await message.delete();
   } catch (err) {
     console.error('元メッセージ削除に失敗:', err);
   }
 
-  // 固定チャンネルへ送信
+  // @everyone メンション送信
+  if (mentionEveryone) {
+    await targetChannel.send('@everyone');
+  }
+
+  // Embed送信
   await targetChannel.send({ embeds: [announceEmbed] });
 
-  // 完了通知用Embed
+  // 完了通知Embed
   const doneEmbed = new EmbedBuilder()
     .setTitle('✅ アナウンス送信完了')
     .setDescription(`チャンネル <#${CHANNEL_ID}> にアナウンスを送信しました。`)
     .setColor(0x00ff00)
     .setTimestamp();
 
-  // 元メッセージがあったチャンネルに通知
   await message.channel.send({ embeds: [doneEmbed] });
 };
