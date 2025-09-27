@@ -12,10 +12,10 @@ module.exports = {
         const commandsPath = path.join(__dirname);
         const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') && file !== 'help.js');
 
-        // コマンド名一覧
+        // コマンド名一覧 (/コマンド名 - 説明)
         const commandList = commandFiles.map(file => {
             const command = require(path.join(commandsPath, file));
-            return `</${command.data.name}:${interaction.client.application.commands.cache.find(cmd => cmd.name === command.data.name)?.id || "未登録"}> - ${command.data.description}`;
+            return `/${command.data.name} - ${command.data.description}`;
         });
 
         // Embed 作成
