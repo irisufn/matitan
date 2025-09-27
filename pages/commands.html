@@ -395,7 +395,7 @@
                 </div>
                 <div class="command-details">
                     <div class="command-description">
-                        BOTの応答速度（レイテンシー）を測定し、接続状況を確認できます。サーバーとの通信品質をリアルタイムで確認する際に使用します。
+                        BOTの応答速度を測定し、接続状況を確認できます。サーバーとの通信品質をリアルタイムで確認する際に使用します。
                     </div>
                     <div class="command-usage">
                         <div class="usage-title">使用方法</div>
@@ -422,17 +422,16 @@
                 </div>
                 <div class="command-details">
                     <div class="command-description">
-                        現在のゲソタウンの状況やイベント情報を取得できます。ショップ情報やセール情報なども確認できます。
+                        現在のゲソタウンの販売状況を確認できます。
                     </div>
                     <div class="command-usage">
                         <div class="usage-title">使用方法</div>
-                        <div class="usage-text">/gesotown [オプション]</div>
+                        <div class="usage-text">/ゲソタウン [オプション]</div>
                     </div>
                     <div class="command-examples">
                         <div class="examples-title">実行例</div>
-                        <div class="example-item">/gesotown → 現在の情報を表示</div>
-                        <div class="example-item">/gesotown event → イベント情報を表示</div>
-                        <div class="example-item">/gesotown shop → ショップ情報を表示</div>
+                        <div class="example-item">/ゲソタウン [type]が通常販売 → 通常販売の情報を表示</div>
+                        <div class="example-item">/ゲソタウン [type]がピックアップ → ピックアップの情報を表示</div>
                     </div>
                 </div>
             </div>
@@ -451,18 +450,11 @@
                 </div>
                 <div class="command-details">
                     <div class="command-description">
-                        現在のナワバリバトルやガチマッチのステージ情報を確認できます。今後のステージローテーション情報も表示されます。
+                        現在のナワバリバトルやガチマッチのステージ情報を確認できます。今後のステージ情報も表示されます。
                     </div>
                     <div class="command-usage">
                         <div class="usage-title">使用方法</div>
-                        <div class="usage-text">/stage [モード]</div>
-                    </div>
-                    <div class="command-examples">
-                        <div class="examples-title">実行例</div>
-                        <div class="example-item">/stage → 全モードの情報を表示</div>
-                        <div class="example-item">/stage regular → ナワバリバトルのステージ</div>
-                        <div class="example-item">/stage ranked → ガチマッチのステージ</div>
-                        <div class="example-item">/stage league → リーグマッチのステージ</div>
+                        <div class="usage-text">/ステージ情報 [モード] [時間]</div>
                     </div>
                 </div>
             </div>
@@ -481,4 +473,85 @@
                 </div>
                 <div class="command-details">
                     <div class="command-description">
-                        Nintendo Switch のフレンドコードを登録・表示・削除できます。他のユーザーとフレンド交換を
+                        Nintendo Switch のフレンドコードを表示できます。フレンドコードのチャンネルにフレンドコードを張り付けるだけで自動検知されます。。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/フレンドコード</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プロフィール コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">👤</div>
+                        <div class="command-text">
+                            <div class="command-name">プロフィール</div>
+                            <div class="command-brief">プロフィール情報の管理</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        ユーザーのプロフィール情報を表示できます。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/プロフィール</div>
+                    </div>
+            </div>
+
+            <!-- 認証 コマンド -->
+            <div class="command-card" onclick="toggleCommand(this)">
+                <div class="command-header">
+                    <div class="command-info">
+                        <div class="command-icon">🔐</div>
+                        <div class="command-text">
+                            <div class="command-name">認証</div>
+                            <div class="command-brief">ユーザー認証機能</div>
+                        </div>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="command-details">
+                    <div class="command-description">
+                        サーバー内での身元確認や特定の役職を取得するための認証機能です。安全で簡単な認証プロセスを提供します。
+                    </div>
+                    <div class="command-usage">
+                        <div class="usage-title">使用方法</div>
+                        <div class="usage-text">/認証</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleCommand(commandCard) {
+            commandCard.classList.toggle('expanded');
+        }
+
+        function toggleMenu() {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            menuToggle.classList.toggle('active');
+            dropdownMenu.classList.toggle('active');
+        }
+
+        // メニュー外をクリックしたら閉じる
+        document.addEventListener('click', function(event) {
+            const menuToggle = document.querySelector('.menu-toggle');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (!menuToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                menuToggle.classList.remove('active');
+                dropdownMenu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
