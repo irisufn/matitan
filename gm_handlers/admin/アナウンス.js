@@ -41,7 +41,7 @@ module.exports = async (client, message, args) => {
   }
 
   const title = args[2];
-  const description = args.slice(3).join(' ');
+  const description = args.slice(3).join(' ').replace(/\\n/g, '\n');
 
   // 表示名とアイコン
   const name = message.author.globalName || message.author.username;
