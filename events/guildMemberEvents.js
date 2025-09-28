@@ -4,7 +4,7 @@ const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
 const CHANNEL_ID = '1405896232647266384'; // 通知用チャンネルID
-const ROLE_ID = '1398719394049298472';    // ←付与したいロールIDを設定
+const ROLE_ID = '1398719394049298472';    // 付与したいロールID
 
 module.exports = [
   {
@@ -27,7 +27,7 @@ module.exports = [
         channel.send({ embeds: [embed] }).catch(console.error);
       }
 
-      // 🔹 ロール付与
+      // ロール付与
       try {
         const role = member.guild.roles.cache.get(ROLE_ID);
         if (role) {
@@ -50,6 +50,26 @@ module.exports = [
         }
       } catch (e) {
         console.error('ブラックリストチェック失敗:', e);
+      }
+    },
+  },
+  {
+    name: 'guildMemberRemove',
+    once: false,
+    async execute(member) {
+      console.log(`[退出] ${member.user.tag} がサーバーを退出しました。`);
+
+      // 通知チャンネル取得
+      const channel = member.guild.channels.cache.get(CHANNEL_ID);
+      if (channel) {
+        const embed = new EmbedBuilder()
+          .setTitle('メンバー退出')
+          .setDescription(`${member.user.tag} がサーバーを退出しました。`)
+          .setColor('Red')
+          .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+          .setTimestamp();
+
+        channel.send({ embeds: [embed] }).catch(console.error);
       }
     },
   },
