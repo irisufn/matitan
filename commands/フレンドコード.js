@@ -1,29 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-// 必要なモジュールのインポート
-const fs = require('fs');
-const TOML = require('@iarna/toml');
-const path = require('path'); // ファイルパスの操作にpathモジュールを使用
-
-// TOMLファイルのパスa
-const CONFIG_PATH = path.join(__dirname, 'data', 'channels.toml');
-
-// 設定を読み込む関数
-function loadConfig() {
-  try {
-    const tomlString = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    return TOML.parse(tomlString).channels; // [channels]セクションだけを返す
-  } catch (error) {
-    console.error(`設定ファイル ${CONFIG_PATH} の読み込みに失敗しました:`, error);
-    // 致命的なエラーとして処理を中断するためにnullなどを返すか、
-    // 例外を再スローします。ここではエラーを発生させます。
-    throw new Error('チャンネル設定のロードに失敗しました。');
-  }
-}
-
-// コマンドが実行される前に設定をロード
-const CHANNEL_CONFIG = loadConfig();
-const TARGET_CHANNEL_ID = CHANNEL_CONFIG.target_channel_id; 
-const GUIDE_CHANNEL_ID = CHANNEL_CONFIG.guide_channel_id; 
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,9 +6,8 @@ module.exports = {
     .setDescription('フレンドコードを表示'),
 
   async execute(interaction) {
-    // チャンネルIDは、上で定義した定数を使用します
-    // const TARGET_CHANNEL_ID = '1395595186847092827'; // 削除
-    // const GUIDE_CHANNEL_ID = '1421663161647497357'; // 削除
+    const TARGET_CHANNEL_ID = '1395595186847092827'; //フレンドコード投稿用チャンネルID
+    const GUIDE_CHANNEL_ID = '1421663161647497357'; //問い合わせ送信先チャンネルID
 
     try {
       const channel = interaction.client.channels.cache.get(TARGET_CHANNEL_ID);
@@ -43,7 +17,7 @@ module.exports = {
           embeds: [
             new EmbedBuilder()
               .setTitle('エラー')
-              .setDescription('指定のチャンネルが見つかりません。設定を確認してください。') // エラーメッセージを少し変更
+              .setDescription('指定のチャンネルが見つかりません。')
               .setColor(0xFF0000),
           ],
           ephemeral: true,
@@ -68,8 +42,7 @@ module.exports = {
       }
 
       // フレンドコード抽出
-      // (中略 - この部分は変更なし)
-      const match = userMessage.content.match(/(?:SW[-\s　,.]?)?(\d{4})[-\s\u3000,.]?(\d{4})[-\s\u3000,.]?(\d{4})/i);
+      const match = userMessage.content.match(/(?:SW[-\s　,.]?)?(\d{4})[-\s　,.]?(\d{4})[-\s　,.]?(\d{4})/i);
       if (!match) {
         return await interaction.reply({
           embeds: [
@@ -106,7 +79,7 @@ module.exports = {
   },
 };
 
-// 最大1000件まで遡ってメッセージを取得 (この関数は変更なし)
+// 最大1000件まで遡ってメッセージを取得
 async function fetchUpTo1000Messages(channel) {
   let allMessages = [];
   let lastId;
