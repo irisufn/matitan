@@ -4,7 +4,7 @@ const fs = require('fs');
 const TOML = require('@iarna/toml');
 const path = require('path'); // ファイルパスの操作にpathモジュールを使用
 
-// TOMLファイルのパス
+// TOMLファイルのパスa
 const CONFIG_PATH = path.join(__dirname, 'data', 'channels.toml');
 
 // 設定を読み込む関数
