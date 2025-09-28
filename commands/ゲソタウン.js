@@ -66,17 +66,13 @@ module.exports = {
 
             // locale経由で日本語化
             const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
-            const primaryGearName = gear.primaryGearPower
-                ? locale.gear[gear.primaryGearPower.__splatoon3ink_id]?.name || 'なし'
-                : 'なし';
             const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
 
             return {
                 name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                 value:
-                    `価格: ${item.price}ゲソ\n` + // ← 単位を「ゲソ」に変更
+                    `価格: ${item.price}ゲソ\n` +
                     `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                    `メインギアパワー: ${primaryGearName}\n` +
                     `ブランド: ${brandName}`
             };
         };

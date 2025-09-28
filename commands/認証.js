@@ -2,8 +2,10 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('disc
 const config = require('../config.json');
 
 // 定数
-const ROLE_ID = '0000000000000000000'; // 認証ロールのID
+const ROLE_ID = '1399382918324813965'; // 認証ロールのID
+const REMOVE_ROLE_ID = '1398719394049298472'; // 削除対象ロールのID
 const REQUIRED_PERMISSIONS = PermissionsBitField.Flags.ManageRoles; // ボットに要求される権限
+const ONE_WEEK = 7 * 24 * 60 * 60 * 1000; // 1週間(ms)
 
 async function sendErrorLog(guild, user, role, title, description, error = null) {
   try {
@@ -76,7 +78,20 @@ module.exports = {
       });
     }
 
+    // ✅ サーバー参加から1週間経過しているかチェック
+    const joinedAt = member.joinedAt;
+    if (Date.now() - joinedAt.getTime() < ONE_WEEK) {
+      const errorMsg = 'サーバー参加から1週間未満のため認証できません。';
+      await interaction.reply({
+        embeds: [new EmbedBuilder().setColor('Red').setTitle('エラー').setDescription(errorMsg)],
+        ephemeral: true,
+      });
+      sendErrorLog(guild, member.user, role, '認証制限', errorMsg);
+      return;
+    }
+
     try {
+      // 認証ロールを付与
       await member.roles.add(role);
       const successEmbed = new EmbedBuilder()
         .setColor('Green')
@@ -84,6 +99,14 @@ module.exports = {
         .setDescription(`${role.name}を付与しました。`)
         .setThumbnail('https://images.emojiterra.com/twitter/v13.1/512px/2705.png');
       await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+
+      // ✅ 付与後にREMOVE_ROLE_IDを持っていたら削除
+      const removeRole = guild.roles.cache.get(REMOVE_ROLE_ID);
+      if (removeRole && member.roles.cache.has(REMOVE_ROLE_ID)) {
+        await member.roles.remove(removeRole);
+        console.log(`ユーザー ${member.user.tag} からロール ${removeRole.name} を削除しました。`);
+      }
+
     } catch (error) {
       console.error(error);
       const errorMsg = '不明なエラーが発生しました。';
