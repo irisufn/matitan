@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 // 必要なモジュールのインポート
 const fs = require('fs');
-const TOML = require('toml');
+const TOML = require('@iarna/toml');
 const path = require('path'); // ファイルパスの操作にpathモジュールを使用
 
 // TOMLファイルのパスa
