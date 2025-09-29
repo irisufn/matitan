@@ -6,7 +6,7 @@ module.exports = async (client, message, args) => {
   if (isNaN(count)) return message.reply('数字を指定してください。');
 
   // 編集対象のメッセージID（例として固定）
-  const TARGET_MESSAGE_ID = 'ここに編集したいメッセージID';
+  const TARGET_MESSAGE_ID = '1422206235154845836';
   const TARGET_CHANNEL_ID = message.channel.id; // 同じチャンネルにある場合
 
   try {
