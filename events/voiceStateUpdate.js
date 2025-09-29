@@ -11,7 +11,7 @@ module.exports = {
             if (newState.member.user.bot) return;
 
             // vcchannels.json を読み込む
-            const filePath = path.join(__dirname, '../data/vcchannels.json');
+            const filePath = path.join(process.cwd(), 'discord_bot_template-main', 'data', 'vcchannels.json');
             if (!fs.existsSync(filePath)) {
                 console.error(`[VC通知] vcchannels.json が存在しません: ${filePath}`);
                 return;
