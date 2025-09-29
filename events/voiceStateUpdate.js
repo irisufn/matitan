@@ -50,7 +50,7 @@ module.exports = {
                 }
 
                 const embed = new EmbedBuilder()
-                    .setColor('Red')
+                    .setColor('Green')
                     .setDescription(`<@${oldState.id}> さんが **${oldChannel.name}** から退室しました。`)
                     .setTimestamp();
 
