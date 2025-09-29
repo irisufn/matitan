@@ -58,12 +58,6 @@ module.exports = async (client, message, args) => {
     .setTimestamp()
     .setColor(color);
 
-  try {
-    await message.delete();
-  } catch (err) {
-    console.error('元メッセージ削除に失敗:', err);
-  }
-
   // @everyone メンション送信
   if (mentionEveryone) {
     await targetChannel.send('@everyone');
