@@ -59,7 +59,7 @@ module.exports = {
                     const embedLeave = new EmbedBuilder()
                         .setColor('Red')
                         .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                        .setDescription(`:outbox_tray: <@${user.id}> さんが **${oldVc.name}** から退出しました。`)
+                        .setDescription(`<@${user.id}> さんが **${oldVc.name}** から退出しました。`)
                         .setTimestamp();
                     const notifyChannel = oldState.guild.channels.cache.get(leaveNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedLeave] });
@@ -69,7 +69,7 @@ module.exports = {
                     const embedJoin = new EmbedBuilder()
                         .setColor('Green')
                         .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                        .setDescription(`:inbox_tray: <@${user.id}> さんが **${newVc.name}** に参加しました。`)
+                        .setDescription(`<@${user.id}> さんが **${newVc.name}** に参加しました。`)
                         .setTimestamp();
                     const notifyChannel = newState.guild.channels.cache.get(joinNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedJoin] });
