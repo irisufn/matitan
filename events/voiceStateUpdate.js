@@ -30,7 +30,7 @@ module.exports = {
                 const embed = new EmbedBuilder()
                     .setColor('Green')
                     .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                    .setDescription(`:inbox_tray: <@${user.id}> さんが **${vc.name}** に参加しました。`)
+                    .setDescription(`<@${user.id}> さんが **${vc.name}** に参加しました。`)
                     .setTimestamp();
                 const notifyChannel = newState.guild.channels.cache.get(notifyChannelId);
                 if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
@@ -43,7 +43,7 @@ module.exports = {
                 const embed = new EmbedBuilder()
                     .setColor('Red')
                     .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                    .setDescription(`:outbox_tray: <@${user.id}> さんが **${vc.name}** から退出しました。`)
+                    .setDescription(`<@${user.id}> さんが **${vc.name}** から退出しました。`)
                     .setTimestamp();
                 const notifyChannel = oldState.guild.channels.cache.get(notifyChannelId);
                 if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
