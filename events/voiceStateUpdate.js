@@ -1,4 +1,4 @@
-// events/voiceStateUpdate.js
+// src/events/voiceStateUpdate.js
 const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
@@ -10,8 +10,8 @@ module.exports = {
             // BOTは通知しない
             if (newState.member.user.bot) return;
 
-            // vcchannels.json を読み込む
-            const filePath = path.join(__dirname, '../../data/vcchannels.json');
+            // プロジェクト直下の data/vcchannels.json を参照
+            const filePath = path.join(process.cwd(), 'data/vcchannels.json');
             if (!fs.existsSync(filePath)) {
                 console.error(`[VC通知] vcchannels.json が存在しません: ${filePath}`);
                 return;
@@ -36,9 +36,7 @@ module.exports = {
                     .setTimestamp();
 
                 const notifyChannel = newState.guild.channels.cache.get(notifyChannelId);
-                if (notifyChannel) {
-                    await notifyChannel.send({ embeds: [embed] });
-                }
+                if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
             }
 
             // 退室
@@ -50,14 +48,12 @@ module.exports = {
                 }
 
                 const embed = new EmbedBuilder()
-                    .setColor('Green')
+                    .setColor('Red')
                     .setDescription(`<@${oldState.id}> さんが **${oldChannel.name}** から退室しました。`)
                     .setTimestamp();
 
                 const notifyChannel = oldState.guild.channels.cache.get(notifyChannelId);
-                if (notifyChannel) {
-                    await notifyChannel.send({ embeds: [embed] });
-                }
+                if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
             }
 
             // 移動
@@ -68,14 +64,12 @@ module.exports = {
                     console.error(`[VC通知] vcchannels.json に ${oldChannel.name} の設定が見つかりません`);
                 } else {
                     const embedLeave = new EmbedBuilder()
-                        .setColor('Red')
+                        .setColor('Green')
                         .setDescription(`<@${oldState.id}> さんが **${oldChannel.name}** から退室しました。`)
                         .setTimestamp();
 
                     const notifyChannel = oldState.guild.channels.cache.get(leaveNotifyId);
-                    if (notifyChannel) {
-                        await notifyChannel.send({ embeds: [embedLeave] });
-                    }
+                    if (notifyChannel) await notifyChannel.send({ embeds: [embedLeave] });
                 }
 
                 // 入室側
@@ -89,9 +83,7 @@ module.exports = {
                         .setTimestamp();
 
                     const notifyChannel = newState.guild.channels.cache.get(joinNotifyId);
-                    if (notifyChannel) {
-                        await notifyChannel.send({ embeds: [embedJoin] });
-                    }
+                    if (notifyChannel) await notifyChannel.send({ embeds: [embedJoin] });
                 }
             }
         } catch (err) {
