@@ -1,4 +1,4 @@
-// src/events/voiceStateUpdate.js
+// events/voiceStateUpdate.js
 const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
@@ -10,78 +10,68 @@ module.exports = {
             // BOTは通知しない
             if (newState.member.user.bot) return;
 
-            // プロジェクト直下の data/vcchannels.json を参照
-            const filePath = path.join(process.cwd(), 'data/vcchannels.json');
+            // vcchannels.json のパス取得（環境依存対策）
+            const filePath = path.join(process.cwd(), 'discord_bot_template-main', 'data', 'vcchannels.json');
             if (!fs.existsSync(filePath)) {
                 console.error(`[VC通知] vcchannels.json が存在しません: ${filePath}`);
                 return;
             }
-
             const vcData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-            const oldChannel = oldState.channel;
-            const newChannel = newState.channel;
+            const oldChannelId = oldState.channelId;
+            const newChannelId = newState.channelId;
+            const member = newState.member;
+            const user = member.user;
 
             // 入室
-            if (!oldChannel && newChannel) {
-                const notifyChannelId = vcData[newChannel.name];
-                if (!notifyChannelId) {
-                    console.error(`[VC通知] vcchannels.json に ${newChannel.name} の設定が見つかりません`);
-                    return;
-                }
-
+            if (!oldChannelId && newChannelId) {
+                const vc = newState.channel;
+                const notifyChannelId = vcData[vc.name];
+                if (!notifyChannelId) return;
                 const embed = new EmbedBuilder()
                     .setColor('Green')
-                    .setDescription(`<@${newState.id}> さんが **${newChannel.name}** に入室しました。`)
+                    .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
+                    .setDescription(`:inbox_tray: <@${user.id}> さんが **${vc.name}** に参加しました。`)
                     .setTimestamp();
-
                 const notifyChannel = newState.guild.channels.cache.get(notifyChannelId);
                 if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
             }
-
             // 退室
-            else if (oldChannel && !newChannel) {
-                const notifyChannelId = vcData[oldChannel.name];
-                if (!notifyChannelId) {
-                    console.error(`[VC通知] vcchannels.json に ${oldChannel.name} の設定が見つかりません`);
-                    return;
-                }
-
+            else if (oldChannelId && !newChannelId) {
+                const vc = oldState.channel;
+                const notifyChannelId = vcData[vc.name];
+                if (!notifyChannelId) return;
                 const embed = new EmbedBuilder()
                     .setColor('Red')
-                    .setDescription(`<@${oldState.id}> さんが **${oldChannel.name}** から退室しました。`)
+                    .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
+                    .setDescription(`:outbox_tray: <@${user.id}> さんが **${vc.name}** から退出しました。`)
                     .setTimestamp();
-
                 const notifyChannel = oldState.guild.channels.cache.get(notifyChannelId);
                 if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
             }
-
             // 移動
-            else if (oldChannel && newChannel && oldChannel.id !== newChannel.id) {
-                // 退室側
-                const leaveNotifyId = vcData[oldChannel.name];
-                if (!leaveNotifyId) {
-                    console.error(`[VC通知] vcchannels.json に ${oldChannel.name} の設定が見つかりません`);
-                } else {
+            else if (oldChannelId && newChannelId && oldChannelId !== newChannelId) {
+                const oldVc = oldState.channel;
+                const newVc = newState.channel;
+                const leaveNotifyId = vcData[oldVc.name];
+                const joinNotifyId = vcData[newVc.name];
+                // 退室通知
+                if (leaveNotifyId) {
                     const embedLeave = new EmbedBuilder()
-                        .setColor('Green')
-                        .setDescription(`<@${oldState.id}> さんが **${oldChannel.name}** から退室しました。`)
+                        .setColor('Red')
+                        .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
+                        .setDescription(`:outbox_tray: <@${user.id}> さんが **${oldVc.name}** から退出しました。`)
                         .setTimestamp();
-
                     const notifyChannel = oldState.guild.channels.cache.get(leaveNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedLeave] });
                 }
-
-                // 入室側
-                const joinNotifyId = vcData[newChannel.name];
-                if (!joinNotifyId) {
-                    console.error(`[VC通知] vcchannels.json に ${newChannel.name} の設定が見つかりません`);
-                } else {
+                // 入室通知
+                if (joinNotifyId) {
                     const embedJoin = new EmbedBuilder()
                         .setColor('Green')
-                        .setDescription(`<@${newState.id}> さんが **${newChannel.name}** に入室しました。`)
+                        .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
+                        .setDescription(`:inbox_tray: <@${user.id}> さんが **${newVc.name}** に参加しました。`)
                         .setTimestamp();
-
                     const notifyChannel = newState.guild.channels.cache.get(joinNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedJoin] });
                 }
