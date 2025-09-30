@@ -2,7 +2,7 @@ const { ChannelType } = require('discord.js');
 const axios = require('axios');
 
 module.exports = async (client, message, args) => {
-    const channelId = '1422204415036752013'; // 固定チャンネルID
+    const channelId = '1422204415036752013';
     let channel;
 
     try {
@@ -26,16 +26,9 @@ module.exports = async (client, message, args) => {
             return message.reply('ステージ情報の取得に失敗しました。');
         }
 
-        const data = response.data;
-        const regularNow = data.regular ? data.regular[0] : null;
-
-        if (!regularNow) {
-            return message.reply('現在のレギュラーマッチ情報が見つかりません。');
-        }
-
-        // JSONを固定チャンネルに送信
-        await channel.send('```json\n' + JSON.stringify(regularNow, null, 2) + '\n```');
-        message.reply('レギュラーマッチ情報を送信しました。');
+        // JSON全体をそのまま送信
+        await channel.send('```json\n' + JSON.stringify(response.data, null, 2) + '\n```');
+        message.reply('ステージ情報を送信しました。');
 
     } catch (error) {
         console.error(error);
