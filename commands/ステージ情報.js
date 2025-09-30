@@ -43,10 +43,10 @@ const formatSchedule = (startTime, endTime, includeDate = false) => {
 
     const pad = (n) => n.toString().padStart(2, '0');
     const startStr = includeDate
-        ? `${startJST.getFullYear()}/${pad(startJST.getMonth()+1)}/${pad(startJST.getDate())} ${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`
+        ? `${startJST.getFullYear()}/${pad(startJST.getMonth() + 1)}/${pad(startJST.getDate())} ${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`
         : `${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`;
     const endStr = includeDate
-        ? `${endJST.getFullYear()}/${pad(endJST.getMonth()+1)}/${pad(endJST.getDate())} ${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`
+        ? `${endJST.getFullYear()}/${pad(endJST.getMonth() + 1)}/${pad(endJST.getDate())} ${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`
         : `${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`;
 
     return `${startStr} 〜 ${endStr}`;
@@ -72,31 +72,33 @@ module.exports = {
                     { name: '次の次のステージ', value: 'next2' }
                 )),
     async execute(interaction) {
-        await interaction.deferReply();
+        try {
+            // まず3秒以内に応答を保留
+            await interaction.deferReply({ ephemeral: false });
 
-        const modeValue = interaction.options.getString('モード');
-        const timeValue = interaction.options.getString('時間');
-        const modeData = MODES.find(m => m.value === modeValue);
-        const modeTitle = modeData ? modeData.title : '不明なモード';
+            const modeValue = interaction.options.getString('モード');
+            const timeValue = interaction.options.getString('時間');
+            const modeData = MODES.find(m => m.value === modeValue);
+            const modeTitle = modeData ? modeData.title : '不明なモード';
 
-        let apiUrl;
-        let useSchedule = false;
+            let apiUrl;
+            let useSchedule = false;
 
-        if (modeValue.includes('coop-grouping') || modeValue === 'event') {
-            apiUrl = `${BASE_URL}${modeValue}/schedule`;
-            useSchedule = true;
-        } else {
-            if (timeValue === 'now' || timeValue === 'next') {
-                apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
-            } else if (timeValue === 'next2') {
+            if (modeValue.includes('coop-grouping') || modeValue === 'event') {
                 apiUrl = `${BASE_URL}${modeValue}/schedule`;
                 useSchedule = true;
+            } else {
+                if (timeValue === 'now' || timeValue === 'next') {
+                    apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
+                } else if (timeValue === 'next2') {
+                    apiUrl = `${BASE_URL}${modeValue}/schedule`;
+                    useSchedule = true;
+                }
             }
-        }
 
-        try {
             const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             let results = response.data.results;
+
             if (!results || results.length === 0) {
                 const emptyEmbed = new EmbedBuilder()
                     .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
@@ -119,7 +121,7 @@ module.exports = {
             const isCoopMode = modeValue.includes('coop-grouping');
             const embed = new EmbedBuilder();
 
-            const includeDate = isCoopMode; // サーモンランは日付も表示.
+            const includeDate = isCoopMode; // サーモンランは日付も表示
             const timeRange = formatSchedule(info.start_time, info.end_time, includeDate);
 
             if (isCoopMode) {
@@ -181,7 +183,13 @@ module.exports = {
         } catch (error) {
             console.error('API取得またはEmbed処理中にエラー:', error);
             const status = error.response ? error.response.status : 'N/A';
-            await interaction.editReply(`ステージ情報APIの取得またはEmbed処理に失敗しました。\n(エラーコード: ${status})`);
+
+            // Interaction が生きているか確認
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply(`ステージ情報APIの取得またはEmbed処理に失敗しました。\n(エラーコード: ${status})`);
+            } else {
+                await interaction.reply({ content: `処理中にエラーが発生しました。\n(エラーコード: ${status})`, ephemeral: true });
+            }
         }
     },
 };
