@@ -42,11 +42,13 @@ const formatSchedule = (startTime, endTime, includeDate = false) => {
     const endJST = new Date(end.getTime() + jstOffset);
 
     const pad = (n) => n.toString().padStart(2, '0');
+
     const startStr = includeDate
-        ? `${startJST.getFullYear()}/${pad(startJST.getMonth()+1)}/${pad(startJST.getDate())} ${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`
+        ? `${startJST.getFullYear()}/${pad(startJST.getMonth() + 1)}/${pad(startJST.getDate())} ${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`
         : `${pad(startJST.getHours())}:${pad(startJST.getMinutes())}`;
+
     const endStr = includeDate
-        ? `${endJST.getFullYear()}/${pad(endJST.getMonth()+1)}/${pad(endJST.getDate())} ${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`
+        ? `${endJST.getFullYear()}/${pad(endJST.getMonth() + 1)}/${pad(endJST.getDate())} ${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`
         : `${pad(endJST.getHours())}:${pad(endJST.getMinutes())}`;
 
     return `${startStr} 〜 ${endStr}`;
@@ -70,7 +72,8 @@ module.exports = {
                     { name: '現在のステージ', value: 'now' },
                     { name: '次のステージ', value: 'next' },
                     { name: '次の次のステージ', value: 'next2' }
-                )),
+                )
+        ),
     async execute(interaction) {
         await interaction.deferReply();
 
@@ -97,6 +100,7 @@ module.exports = {
         try {
             const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             let results = response.data.results;
+
             if (!results || results.length === 0) {
                 const emptyEmbed = new EmbedBuilder()
                     .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
@@ -118,7 +122,6 @@ module.exports = {
 
             const isCoopMode = modeValue.includes('coop-grouping');
             const embed = new EmbedBuilder();
-
             const includeDate = isCoopMode; // サーモンランは日付も表示
             const timeRange = formatSchedule(info.start_time, info.end_time, includeDate);
 
@@ -150,6 +153,7 @@ module.exports = {
                     : (info.stage ? info.stage.name : '不明');
 
                 const ruleName = info.rule ? info.rule.name : '不明';
+
                 embed.setDescription(`**${stageNames}**`)
                     .addFields(
                         { name: 'ルール', value: ruleName, inline: true },
@@ -177,7 +181,6 @@ module.exports = {
             }
 
             await interaction.editReply({ embeds: [embed] });
-
         } catch (error) {
             console.error('API取得またはEmbed処理中にエラー:', error);
             const status = error.response ? error.response.status : 'N/A';
