@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
+const { setTimeout: wait } = require('node:timers/promises'); // 念のため wait を用意
 
 const MODE_URLS = {
     regular: {
@@ -89,21 +90,23 @@ module.exports = {
                     { name: '次のステージ', value: 'next' }
                 )),
     async execute(interaction) {
+        // ここでなるべく早く deferReply を呼ぶ
         await interaction.deferReply();
 
-        const modeValue = interaction.options.getString('モード');
-        const timeValue = interaction.options.getString('時間');
-
-        const apiUrl = MODE_URLS[modeValue]?.[timeValue];
-        if (!apiUrl) {
-            console.warn(`[ステージ情報] URL未定義: mode=${modeValue}, time=${timeValue}`);
-            await interaction.editReply('指定されたモード/時間の組み合わせに対応するURLが見つかりません。');
-            return;
-        }
-
-        console.log(`[ステージ情報] APIリクエスト開始: ${apiUrl}`);
-
         try {
+            const modeValue = interaction.options.getString('モード');
+            const timeValue = interaction.options.getString('時間');
+
+            const apiUrl = MODE_URLS[modeValue]?.[timeValue];
+            if (!apiUrl) {
+                console.warn(`[ステージ情報] URL未定義: mode=${modeValue}, time=${timeValue}`);
+                await interaction.editReply('指定されたモード/時間の組み合わせに対応するURLが見つかりません。');
+                return;
+            }
+
+            console.log(`[ステージ情報] APIリクエスト開始: ${apiUrl}`);
+
+            // API呼び出し
             const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             const results = response.data.results;
             console.log(`[ステージ情報] APIレスポンス受信: ${results?.length || 0} 件`);
@@ -124,12 +127,11 @@ module.exports = {
                 .setColor(0x0099FF);
 
             await interaction.editReply({ embeds: [embed] });
-
             console.log(`[ステージ情報] 正常に送信完了: mode=${modeValue}, time=${timeValue}`);
 
         } catch (error) {
             const status = error.response ? error.response.status : 'N/A';
-            console.error(`[ステージ情報] API取得エラー: status=${status}, url=${apiUrl}`, error.message);
+            console.error(`[ステージ情報] API取得エラー: status=${status}`, error.message);
             await interaction.editReply('ステージ情報の取得に失敗しました。');
         }
     },
