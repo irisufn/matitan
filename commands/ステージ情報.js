@@ -27,16 +27,16 @@ const MODE_URLS = {
         next: 'https://spla3.yuu26.com/api/x/next',
     },
     event: {
-        now: 'https://spla3.yuu26.com/api/event/now',
-        next: 'https://spla3.yuu26.com/api/event/next',
+        now: 'https://spla3.yuu26.com/api/event/schedule',
+        next: 'https://spla3.yuu26.com/api/event/schedule',
     },
     'coop-grouping': {
         now: 'https://spla3.yuu26.com/api/coop-grouping/now',
         next: 'https://spla3.yuu26.com/api/coop-grouping/next',
     },
     'coop-grouping-team-contest': {
-        now: 'https://spla3.yuu26.com/api/coop-grouping-team-contest/now',
-        next: 'https://spla3.yuu26.com/api/coop-grouping-team-contest/next',
+        now: 'https://spla3.yuu26.com/api/coop-grouping-team-contest/schedule',
+        next: 'https://spla3.yuu26.com/api/coop-grouping-team-contest/schedule',
     },
 };
 
