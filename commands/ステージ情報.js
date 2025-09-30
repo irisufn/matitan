@@ -159,35 +159,36 @@ module.exports = {
             }
         }
 
-        // 非同期処理を直接thenで処理
-        axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } })
-            .then(response => {
-                const results = response.data.results;
+        try {
+            // 並列取得（今後APIが複数になる場合も拡張しやすい）
+            const [response] = await Promise.all([
+                axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } })
+            ]);
+            const results = response.data.results;
 
-                if (!results || results.length === 0) {
-                    const emptyEmbed = new EmbedBuilder()
-                        .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
-                        .setDescription('現在このモードの情報はありません。')
-                        .setColor(0x808080);
-                    return interaction.editReply({ embeds: [emptyEmbed] });
-                }
+            if (!results || results.length === 0) {
+                const emptyEmbed = new EmbedBuilder()
+                    .setAuthor({ name: modeTitle, iconURL: MODE_ICONS[modeValue] || null })
+                    .setDescription('現在このモードの情報はありません。')
+                    .setColor(0x808080);
+                return interaction.editReply({ embeds: [emptyEmbed] });
+            }
 
-                // 取得対象
-                let info;
-                if (useSchedule) {
-                    const index = timeValue === 'next' ? 1 : timeValue === 'next2' ? 2 : 0;
-                    info = results[index] || results[results.length - 1];
-                } else {
-                    info = results[0];
-                }
+            // 取得対象
+            let info;
+            if (useSchedule) {
+                const index = timeValue === 'next' ? 1 : timeValue === 'next2' ? 2 : 0;
+                info = results[index] || results[results.length - 1];
+            } else {
+                info = results[0];
+            }
 
-                // Embed作成と送信
-                const embed = createEmbedFromJson(info, modeValue, modeTitle, isCoopMode);
-                return interaction.editReply({ embeds: [embed] });
-            })
-            .catch(err => {
-                console.error('ステージ情報取得エラー:', err);
-                return interaction.editReply('ステージ情報の取得に失敗しました。');
-            });
+            // Embed作成と送信
+            const embed = createEmbedFromJson(info, modeValue, modeTitle, isCoopMode);
+            return interaction.editReply({ embeds: [embed] });
+        } catch (err) {
+            console.error('ステージ情報取得エラー:', err);
+            return interaction.editReply('ステージ情報の取得に失敗しました。');
+        }
     },
 };
