@@ -95,7 +95,10 @@ module.exports = {
         }
 
         try {
-            const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
+            // 並列取得（今後APIが複数になる場合も拡張しやすい）
+            const [response] = await Promise.all([
+                axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } })
+            ]);
             let results = response.data.results;
             if (!results || results.length === 0) {
                 const emptyEmbed = new EmbedBuilder()
