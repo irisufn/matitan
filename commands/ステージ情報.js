@@ -64,34 +64,30 @@ module.exports = {
         )
         .addStringOption(option =>
             option.setName('時間')
-                .setDescription('取得するステージ情報（現在/次/スケジュール）を選択してください。')
+                .setDescription('取得するステージ情報（現在/次）を選択してください。')
                 .setRequired(true)
                 .addChoices(
                     { name: '現在のステージ', value: 'now' },
-                    { name: '次のステージ', value: 'next' },
-                    { name: 'スケジュール', value: 'schedule' }
+                    { name: '次のステージ', value: 'next' }
                 )
         ),
     async execute(interaction) {
-        await interaction.deferReply();
+        await interaction.deferReply(); // 3秒ルール対策
 
         const modeValue = interaction.options.getString('モード');
-        let timeValue = interaction.options.getString('時間');
+        const timeValue = interaction.options.getString('時間');
         const modeData = MODES.find(m => m.value === modeValue);
         const modeTitle = modeData ? modeData.title : '不明なモード';
 
         let apiUrl;
+        let useSchedule = false;
 
-        // イベントマッチ・バイトチームコンテストは常に schedule
+        // イベントマッチ・バイトチームコンテストは schedule 固定
         if (modeValue === 'event' || modeValue === 'coop-grouping-team-contest') {
             apiUrl = `${BASE_URL}${modeValue}/schedule`;
-            timeValue = 'schedule';
+            useSchedule = true;
         } else {
-            if (timeValue === 'now' || timeValue === 'next') {
-                apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
-            } else {
-                apiUrl = `${BASE_URL}${modeValue}/schedule`;
-            }
+            apiUrl = `${BASE_URL}${modeValue}/${timeValue}`;
         }
 
         try {
@@ -107,15 +103,14 @@ module.exports = {
             }
 
             let info;
-            if (timeValue === 'schedule') {
-                info = results[0]; // schedule の場合は先頭を使用
+            if (useSchedule) {
+                info = results[0]; // scheduleの場合は最初の要素
             } else {
-                info = results[0]; // now/next の場合も API 側でフィルタされる
+                info = results[0];
             }
 
             const isCoopMode = modeValue.includes('coop-grouping');
             const embed = new EmbedBuilder();
-
             const includeDate = isCoopMode;
             const timeRange = formatSchedule(info.start_time, info.end_time, includeDate);
 
