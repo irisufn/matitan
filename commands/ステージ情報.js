@@ -42,7 +42,6 @@ const MODE_URLS = {
 
 const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
 
-// 時刻整形関数はそのまま使える
 const formatSchedule = (startTime, endTime, includeDate = false) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
@@ -97,15 +96,21 @@ module.exports = {
 
         const apiUrl = MODE_URLS[modeValue]?.[timeValue];
         if (!apiUrl) {
+            console.warn(`[ステージ情報] URL未定義: mode=${modeValue}, time=${timeValue}`);
             await interaction.editReply('指定されたモード/時間の組み合わせに対応するURLが見つかりません。');
             return;
         }
 
+        console.log(`[ステージ情報] APIリクエスト開始: ${apiUrl}`);
+
         try {
             const response = await axios.get(apiUrl, { headers: { 'User-Agent': USER_AGENT } });
             const results = response.data.results;
+            console.log(`[ステージ情報] APIレスポンス受信: ${results?.length || 0} 件`);
+
             if (!results || results.length === 0) {
                 await interaction.editReply('現在このモードの情報はありません。');
+                console.log(`[ステージ情報] データなし: mode=${modeValue}, time=${timeValue}`);
                 return;
             }
 
@@ -120,8 +125,11 @@ module.exports = {
 
             await interaction.editReply({ embeds: [embed] });
 
+            console.log(`[ステージ情報] 正常に送信完了: mode=${modeValue}, time=${timeValue}`);
+
         } catch (error) {
-            console.error('API取得エラー:', error);
+            const status = error.response ? error.response.status : 'N/A';
+            console.error(`[ステージ情報] API取得エラー: status=${status}, url=${apiUrl}`, error.message);
             await interaction.editReply('ステージ情報の取得に失敗しました。');
         }
     },
