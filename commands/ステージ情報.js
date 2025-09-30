@@ -32,7 +32,7 @@ const RULE_THUMBNAILS = {
     CLAM: 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/stages/mode/clam.png',
 };
 
-const USER_AGENT = 'SplaBot/1.0 (Contact: your_discord_username#0000 or your website)';
+const USER_AGENT = 'SplaBot/1.0 (irisu1002you@gmail.com)';
 
 const formatSchedule = (startTime, endTime, includeDate = false) => {
     const start = new Date(startTime);
