@@ -119,7 +119,7 @@ module.exports = {
             const isCoopMode = modeValue.includes('coop-grouping');
             const embed = new EmbedBuilder();
 
-            const includeDate = isCoopMode; // サーモンランは日付も表示
+            const includeDate = isCoopMode; // サーモンランは日付も表示.
             const timeRange = formatSchedule(info.start_time, info.end_time, includeDate);
 
             if (isCoopMode) {
