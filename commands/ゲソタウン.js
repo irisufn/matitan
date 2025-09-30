@@ -53,21 +53,21 @@ module.exports = {
 
         const type = interaction.options.getString('type');
 
-        const gearRes = await fetch(GEAR_JSON_URL);
+        // 並列取得
+        const [gearRes, localeRes] = await Promise.all([
+            fetch(GEAR_JSON_URL),
+            fetch(LOCALE_JSON_URL)
+        ]);
         const gearData = await gearRes.json();
-
-        const localeRes = await fetch(LOCALE_JSON_URL);
         const locale = await localeRes.json();
 
         let embeds = [];
 
         const processItem = (item) => {
             const gear = item.gear;
-
             // locale経由で日本語化
             const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
             const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
-
             return {
                 name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
                 value:
@@ -82,38 +82,30 @@ module.exports = {
             if (items.length === 0) {
                 return interaction.editReply('現在、通常販売のギアはありません。');
             }
-
             const embed = new EmbedBuilder()
                 .setTitle('ゲソタウン - 通常販売ギア')
                 .setColor('#11edaa');
-
             embed.addFields(items.map(processItem));
             embeds.push(embed);
-
         } else if (type === 'pickup') {
             const pickup = gearData.data.gesotown.pickupBrand;
             if (!pickup || !pickup.brandGears || pickup.brandGears.length === 0) {
                 return interaction.editReply('現在、ピックアップ販売はありません。');
             }
-
             const embed = new EmbedBuilder()
                 .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
                 .setColor('#ed751f');
-
             // ピックアップの大きな画像
             if (pickup.image?.url) {
                 embed.setImage(pickup.image.url);
             }
-
             // ブランドの得意ギアパワーのアイコンをサムネイルに
             if (pickup.brand?.usualGearPower?.image?.url) {
                 embed.setThumbnail(pickup.brand.usualGearPower.image.url);
             }
-
             embed.addFields(pickup.brandGears.map(processItem));
             embeds.push(embed);
         }
-
         await interaction.editReply({ embeds });
     }
 };
