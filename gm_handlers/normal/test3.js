@@ -2,17 +2,13 @@ const { ChannelType } = require('discord.js');
 const axios = require('axios');
 
 module.exports = async (client, message, args) => {
-    // args[0] に送信先チャンネルIDを指定する前提
-    const channelId = args[0];
-    if (!channelId) {
-        return message.reply('1422204415036752013');
-    }
-
+    const channelId = '1422204415036752013'; // 固定チャンネルID
     let channel;
+
     try {
         channel = await client.channels.fetch(channelId);
         if (!channel || channel.type !== ChannelType.GuildText) {
-            return message.reply('指定されたチャンネルが見つからないか、テキストチャンネルではありません。');
+            return message.reply('送信先チャンネルが見つからないか、テキストチャンネルではありません。');
         }
     } catch (error) {
         console.error(error);
@@ -37,8 +33,10 @@ module.exports = async (client, message, args) => {
             return message.reply('現在のレギュラーマッチ情報が見つかりません。');
         }
 
+        // JSONを固定チャンネルに送信
         await channel.send('```json\n' + JSON.stringify(regularNow, null, 2) + '\n```');
-        message.reply(`指定チャンネル <#${channelId}> にレギュラーマッチ情報を送信しました。`);
+        message.reply('レギュラーマッチ情報を送信しました。');
+
     } catch (error) {
         console.error(error);
         message.reply('ステージ情報の取得中にエラーが発生しました。');
