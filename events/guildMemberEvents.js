@@ -3,8 +3,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
-const CHANNEL_ID = '1405896232647266384'; // 通知用チャンネルID
-const ROLE_ID = '1398719394049298472';    // 付与したいロールID
+const JOIN_CHANNEL_ID = '1405896232647266384';  // 参加通知用チャンネルID
+const LEAVE_CHANNEL_ID = '1421663161647497357'; // 退出通知用チャンネルID（新しく指定）
+const ROLE_ID = '1398719394049298472';          // 付与したいロールID
 
 module.exports = [
   {
@@ -13,8 +14,8 @@ module.exports = [
     async execute(member) {
       console.log(`[参加] ${member.user.tag} がサーバーに参加しました。`);
 
-      // 通知チャンネル取得
-      const channel = member.guild.channels.cache.get(CHANNEL_ID);
+      // 通知チャンネル取得（参加用）
+      const channel = member.guild.channels.cache.get(JOIN_CHANNEL_ID);
       if (channel) {
         const embed = new EmbedBuilder()
           .setTitle('メンバー参加')
@@ -59,8 +60,8 @@ module.exports = [
     async execute(member) {
       console.log(`[退出] ${member.user.tag} がサーバーを退出しました。`);
 
-      // 通知チャンネル取得
-      const channel = member.guild.channels.cache.get(CHANNEL_ID);
+      // 通知チャンネル取得（退出用）
+      const channel = member.guild.channels.cache.get(LEAVE_CHANNEL_ID);
       if (channel) {
         const embed = new EmbedBuilder()
           .setTitle('メンバー退出')
