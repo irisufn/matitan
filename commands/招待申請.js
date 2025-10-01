@@ -23,22 +23,6 @@ module.exports = {
     const userId = interaction.user.id;
 
     try {
-      // DMが送れるかテスト
-      let canDM = true;
-      try {
-        await interaction.user.send('テストメッセージです。このメッセージは削除されます。');
-      } catch {
-        canDM = false;
-      }
-
-      if (!canDM) {
-        const embed = new EmbedBuilder()
-          .setTitle('申請ができませんでした。')
-          .setColor('Red')
-          .setDescription('コンテンツ＆ソーシャルのダイレクトメッセージをONにして再度お試しください。');
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-
       // 判定用チャンネルの最新メッセージ取得
       const checkChannel = await interaction.client.channels.fetch(APPROVAL_CHECK_CHANNEL_ID);
       const messages = await checkChannel.messages.fetch({ limit: 1 });
