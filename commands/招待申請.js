@@ -6,6 +6,7 @@ const DENIED_JSON_CHANNEL_ID = "1421706737886564362";    // 不許可JSON格納�
 const DENIED_JSON_MESSAGE_ID = "1422883649032028254";    // 不許可JSON格納メッセージ
 const APPROVED_JSON_CHANNEL_ID = "1422873409024557056";  // 許可JSON格納チャンネル
 const APPROVED_JSON_MESSAGE_ID = "1422879382124494920";  // 許可JSON格納メッセージ
+const INVITE_CHANNEL_ID = "1405896232647266384";         // 招待リンク作成チャンネル
 
 module.exports = {
   data: new SlashCommandBuilder()
