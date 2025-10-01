@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 // === 設定（IDを適宜置き換えてください） ===
-const APPROVAL_CHECK_CHANNEL_ID = "1422876009195114516"; // 最新メッセージで許可/不許可判定
-const DENIED_JSON_CHANNEL_ID = "1421706737886564362"; // 不許可JSONを保存しているチャンネルID
-const DENIED_JSON_MESSAGE_ID = "1422879387124236331"; // 不許可JSONを保存しているメッセージID
-const APPROVED_JSON_CHANNEL_ID = "1422873409024557056"; // 許可JSONを保存しているチャンネルID
-const APPROVED_JSON_MESSAGE_ID = "1422879382124494920"; // 許可JSONを保存しているメッセージID
+const APPROVAL_CHECK_CHANNEL_ID = "1422876009195114516"; // 許可/不許可判定用チャンネル
+const DENIED_JSON_CHANNEL_ID = "1421706737886564362";    // 不許可JSON格納チャンネル
+const DENIED_JSON_MESSAGE_ID = "1422883649032028254";    // 不許可JSON格納メッセージ
+const APPROVED_JSON_CHANNEL_ID = "1422873409024557056";  // 許可JSON格納チャンネル
+const APPROVED_JSON_MESSAGE_ID = "1422876260069146648";  // 許可JSON格納メッセージ
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -33,11 +33,11 @@ module.exports = {
 
       const content = latestMessage.content;
 
-      // 現在時刻（日本時間）
+      // 日本時間
       const now = new Date();
       const japanTime = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
 
-      // 6桁ランダム生成関数（重複なし、123456は不可）
+      // 6桁ランダム生成（123456除外、重複チェック用）
       const generateCode = (existingCodes) => {
         let code;
         do {
@@ -46,43 +46,50 @@ module.exports = {
         return code;
       };
 
-      // JSON取得用関数
-      const fetchJsonMessage = async (channelId, messageId) => {
-        const ch = await interaction.client.channels.fetch(channelId);
-        const msg = await ch.messages.fetch(messageId);
+      // JSON取得関数（コードブロック除去）
+      const fetchJsonMessage = async (channel, messageId) => {
+        const msg = await channel.messages.fetch(messageId);
+        let text = msg.content;
+        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
         try {
-          return JSON.parse(msg.content);
+          return JSON.parse(text);
         } catch (e) {
+          console.error("JSON解析失敗:", e);
           return {};
         }
       };
 
+      // JSONに新規追加＆編集
+      const addToJsonMessage = async (channel, messageId, code, data) => {
+        const json = await fetchJsonMessage(channel, messageId);
+        json[code] = data; // 既存を保持して新規データ追加
+        const msg = await channel.messages.fetch(messageId);
+        await msg.edit("```json\n" + JSON.stringify(json, null, 2) + "\n```");
+      };
+
+      // 不許可の場合
       if (content.includes("不許可")) {
-        // 不許可の場合 → 不許可JSONにマージ
-        const deniedJson = await fetchJsonMessage(DENIED_JSON_CHANNEL_ID, DENIED_JSON_MESSAGE_ID);
+        const deniedChannel = await interaction.client.channels.fetch(DENIED_JSON_CHANNEL_ID);
+        const deniedJson = await fetchJsonMessage(deniedChannel, DENIED_JSON_MESSAGE_ID);
         const code = generateCode(deniedJson);
 
-        // 新規データだけ追加
-        deniedJson[code] = {
+        await addToJsonMessage(deniedChannel, DENIED_JSON_MESSAGE_ID, code, {
           userid: userId,
           count: count
-        };
-
-        const deniedChannel = await interaction.client.channels.fetch(DENIED_JSON_CHANNEL_ID);
-        const deniedMsg = await deniedChannel.messages.fetch(DENIED_JSON_MESSAGE_ID);
-        await deniedMsg.edit("```json\n" + JSON.stringify(deniedJson, null, 2) + "\n```");
+        });
 
       } else if (content.includes("許可")) {
-        // 許可の場合 → 使用回数分の招待コード生成してJSONにマージ & DM送信
-        const approvedJson = await fetchJsonMessage(APPROVED_JSON_CHANNEL_ID, APPROVED_JSON_MESSAGE_ID);
+        // 許可の場合
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
-        const approvedMsg = await approvedChannel.messages.fetch(APPROVED_JSON_MESSAGE_ID);
+        const approvedJson = await fetchJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID);
 
         for (let i = 0; i < count; i++) {
           const code = generateCode(approvedJson);
 
-          // 新しいキーだけ追加
-          approvedJson[code] = [userId, japanTime];
+          await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, code, [
+            userId,
+            japanTime
+          ]);
 
           // DM送信
           try {
@@ -91,11 +98,9 @@ module.exports = {
             console.warn(`DM送信失敗: ${err}`);
           }
         }
-
-        await approvedMsg.edit("```json\n" + JSON.stringify(approvedJson, null, 2) + "\n```");
       }
 
-      // Embedで申請完了通知
+      // 申請完了通知Embed
       const embed = new EmbedBuilder()
         .setTitle("申請が完了しました ✅")
         .setColor("Green")
