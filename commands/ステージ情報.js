@@ -79,6 +79,16 @@ module.exports = {
         const modeData = MODES.find(m => m.value === modeValue);
         const modeTitle = modeData ? modeData.title : '不明なモード';
 
+        // 廃止済みオプションチェック
+        if (timeValue === 'next2') {
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('エラー')
+                .setDescription('「次の次」は廃止されました。「現在」または「次」を選んでください。')
+                .setColor(0xFF0000);
+            await interaction.editReply({ embeds: [errorEmbed] });
+            return;
+        }
+
         let apiUrl;
         let useSchedule = false;
 
