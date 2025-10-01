@@ -5,8 +5,7 @@ module.exports = async (client, message, args) => {
   const userData = { 
     "123456": {
       "userid": "12345678", 
-      "count": 1,
-      "approved": true  
+      "count": 1
     },
   };
 
