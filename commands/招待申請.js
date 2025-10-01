@@ -44,9 +44,9 @@ module.exports = {
         }
       };
 
-      const addToJsonMessage = async (channel, messageId, code, data) => {
+      const addToJsonMessage = async (channel, messageId, key, data) => {
         const json = await fetchJsonMessage(channel, messageId);
-        json[code] = data;
+        json[key] = data;
         try {
           const msg = await channel.messages.fetch(messageId);
           await msg.edit("```json\n" + JSON.stringify(json, null, 2) + "\n```");
@@ -55,7 +55,7 @@ module.exports = {
         }
       };
 
-      // 6桁ランダムコード生成（既存重複チェック・123456除外）
+      // 6桁ランダムコード生成（不許可用）
       const generateCode = (existingCodes) => {
         let code;
         do {
@@ -66,7 +66,7 @@ module.exports = {
 
       // JSON追加 + 招待作成（許可/不許可判定）
       if (content.includes("不許可")) {
-        // 不許可 → JSONに追加
+        // 不許可 → 6桁ランダムコードでJSONに追加
         const deniedChannel = await interaction.client.channels.fetch(DENIED_JSON_CHANNEL_ID);
         const deniedJson = await fetchJsonMessage(deniedChannel, DENIED_JSON_MESSAGE_ID);
         const code = generateCode(deniedJson);
@@ -83,8 +83,6 @@ module.exports = {
         const approvedJson = await fetchJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID);
 
         for (let i = 0; i < count; i++) {
-          const code = generateCode(approvedJson);
-
           // Discord招待リンク作成
           const invite = await inviteChannel.createInvite({
             maxAge: 0,   // 無期限
@@ -92,15 +90,16 @@ module.exports = {
             unique: true
           });
 
-          // JSONに追加
-          await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, code, [
+          // JSONに追加（キーは招待コード部分のみ）
+          const inviteCode = invite.code;
+          await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, inviteCode, [
             userId,
             japanTime
           ]);
 
           // DM送信（失敗しても無視）
           try {
-            await interaction.user.send(`申請が承認されました。\n${invite.url}`);
+            await interaction.user.send(`申請が承認されました。\nhttps://discord.gg/${inviteCode}`);
           } catch (err) {
             console.warn(`DM送信失敗: ${err}`);
           }
