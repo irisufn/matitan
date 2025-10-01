@@ -58,10 +58,11 @@ module.exports = {
       };
 
       if (content.includes("不許可")) {
-        // 不許可の場合 → 不許可JSONに追加
+        // 不許可の場合 → 不許可JSONにマージ
         const deniedJson = await fetchJsonMessage(DENIED_JSON_CHANNEL_ID, DENIED_JSON_MESSAGE_ID);
         const code = generateCode(deniedJson);
 
+        // 新規データだけ追加
         deniedJson[code] = {
           userid: userId,
           count: count
@@ -72,13 +73,15 @@ module.exports = {
         await deniedMsg.edit("```json\n" + JSON.stringify(deniedJson, null, 2) + "\n```");
 
       } else if (content.includes("許可")) {
-        // 許可の場合 → 使用回数分の招待コード生成してJSONに追加 & DM送信
+        // 許可の場合 → 使用回数分の招待コード生成してJSONにマージ & DM送信
         const approvedJson = await fetchJsonMessage(APPROVED_JSON_CHANNEL_ID, APPROVED_JSON_MESSAGE_ID);
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
         const approvedMsg = await approvedChannel.messages.fetch(APPROVED_JSON_MESSAGE_ID);
 
         for (let i = 0; i < count; i++) {
           const code = generateCode(approvedJson);
+
+          // 新しいキーだけ追加
           approvedJson[code] = [userId, japanTime];
 
           // DM送信
