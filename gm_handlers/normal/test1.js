@@ -1,21 +1,35 @@
-// !gmコマンドのテキスト反応処理
 module.exports = async (client, message, args) => {
-  // 送信先チャンネルID
-  const CHANNEL_ID = '1422204415036752013';
+  // 送信先チャンネルID。定数名はすべて大文字とアンダースコアで統一 (慣習)
+  const CHANNEL_ID = '1422204415036752013'; 
 
-  // JSON形式のデータ
-  const jsonData = [
-    {
-      "userid": "12345678",
+  const userData = { 
+    "123456": {
+      "userid": "12345678", 
       "count": 1,
-      "approved": true
-    }
-  ];
+      "approved": true  
+    },
+  };
 
-  // チャンネル取得
-  const channel = await client.channels.fetch(CHANNEL_ID).catch(console.error);
-  if (!channel) return message.reply('指定されたチャンネルが見つかりません。');
+  // 1. チャンネルの取得をより安全に処理
+  const channel = await client.channels.fetch(CHANNEL_ID)
+    .catch(error => {
+      console.error('チャンネル取得エラー:', error);
+      return null;
+    });
 
-  // JSONを文字列化して送信
-  channel.send('```json\n' + JSON.stringify(jsonData, null, 2) + '\n```');
+  if (!channel) {
+    // エラーメッセージの送信
+    return message.reply('⚠️ 指定されたチャンネルが見つからないか、アクセスできません。');
+  }
+
+  // 2. JSONを整形して送信（JSON.stringifyの第2引数に null、第3引数に 2 を指定）
+  const jsonString = JSON.stringify(userData, null, 2);
+
+  // 3. コードブロックと整形されたJSON文字列を結合して送信
+  // バッククォート (`) を使用したテンプレートリテラルでより読みやすく
+  channel.send(`\`\`\`json\n${jsonString}\n\`\`\``)
+    .catch(error => {
+      console.error('メッセージ送信エラー:', error);
+      message.reply('JSONデータの送信に失敗しました。');
+    });
 };
