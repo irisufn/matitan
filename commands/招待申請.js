@@ -47,13 +47,11 @@ module.exports = {
       const addToJsonMessage = async (channel, messageId, code, data) => {
         const json = await fetchJsonMessage(channel, messageId);
         json[code] = data;
-        let msg;
         try {
-          msg = await channel.messages.fetch(messageId);
+          const msg = await channel.messages.fetch(messageId);
           await msg.edit("```json\n" + JSON.stringify(json, null, 2) + "\n```");
         } catch {
-          // メッセージがなければ新規作成
-          msg = await channel.send("```json\n" + JSON.stringify(json, null, 2) + "\n```");
+          await channel.send("```json\n" + JSON.stringify(json, null, 2) + "\n```");
         }
       };
 
@@ -66,8 +64,9 @@ module.exports = {
         return code;
       };
 
+      // JSON追加 + 招待作成（許可/不許可判定）
       if (content.includes("不許可")) {
-        // 不許可の場合 → JSONに追加
+        // 不許可 → JSONに追加
         const deniedChannel = await interaction.client.channels.fetch(DENIED_JSON_CHANNEL_ID);
         const deniedJson = await fetchJsonMessage(deniedChannel, DENIED_JSON_MESSAGE_ID);
         const code = generateCode(deniedJson);
@@ -78,7 +77,7 @@ module.exports = {
         });
 
       } else if (content.includes("許可")) {
-        // 許可の場合 → JSON追加 + 招待作成 + DM送信
+        // 許可 → JSON追加 + 招待作成 + DM送信
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
         const inviteChannel = await interaction.client.channels.fetch(INVITE_CHANNEL_ID);
         const approvedJson = await fetchJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID);
@@ -99,7 +98,7 @@ module.exports = {
             japanTime
           ]);
 
-          // DM送信（プレーンテキスト）
+          // DM送信（失敗しても無視）
           try {
             await interaction.user.send(`申請が承認されました。\n${invite.url}`);
           } catch (err) {
@@ -118,7 +117,9 @@ module.exports = {
 
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: "エラーが発生しました。", ephemeral: true });
+      if (!interaction.replied) {
+        await interaction.reply({ content: "エラーが発生しました。", ephemeral: true });
+      }
     }
   }
 };
