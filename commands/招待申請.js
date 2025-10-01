@@ -77,7 +77,7 @@ module.exports = {
         });
 
       } else if (content.includes("許可")) {
-        // 許可 → 招待作成 + JSON追加 + DM
+        // 許可 → 招待作成 + DM送信
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
         const inviteChannel = await interaction.client.channels.fetch(INVITE_CHANNEL_ID);
 
@@ -88,16 +88,32 @@ module.exports = {
             maxUses: 1,
             unique: true
           });
+
           const inviteCode = invite.code;
 
-          // JSONに追加
-          await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, inviteCode, [
-            userId,
-            japanTime
-          ]);
+          // DM送信（失敗した場合はJSONに追加しない）
+          let dmSuccess = true;
+          try {
+            await interaction.user.send(`申請が承認されました。\nhttps://discord.gg/${inviteCode}`);
+          } catch (err) {
+            console.warn(`DM送信失敗: ${err}`);
+            dmSuccess = false;
 
-          // DM送信（ここは既にテスト済みなので失敗はほぼない）
-          await interaction.user.send(`申請が承認されました。\nhttps://discord.gg/${inviteCode}`);
+            // Embedで通知
+            const embed = new EmbedBuilder()
+              .setTitle("DM送信に失敗しました ⚠️")
+              .setColor("Red")
+              .setDescription("コンテンツ＆ソーシャルのダイレクトメッセージをONにして再度お試しください。");
+            await interaction.reply({ embeds: [embed], ephemeral: true });
+          }
+
+          // DM成功時のみ JSON に追加
+          if (dmSuccess) {
+            await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, inviteCode, [
+              userId,
+              japanTime
+            ]);
+          }
         }
       }
 
