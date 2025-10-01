@@ -22,22 +22,41 @@ module.exports = {
     const userId = interaction.user.id;
 
     try {
-      // 判定用チャンネル取得
+      // 判定用チャンネルの最新メッセージ取得
       const checkChannel = await interaction.client.channels.fetch(APPROVAL_CHECK_CHANNEL_ID);
-      if (!checkChannel) return interaction.reply({ content: "判定用チャンネルが見つかりません。", ephemeral: true });
-
-      // 最新メッセージ取得
       const messages = await checkChannel.messages.fetch({ limit: 1 });
       const latestMessage = messages.first();
       if (!latestMessage) return interaction.reply({ content: "最新メッセージが取得できません。", ephemeral: true });
 
       const content = latestMessage.content;
-
-      // 日本時間
       const now = new Date();
       const japanTime = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
 
-      // 6桁ランダム生成（123456除外、重複チェック用）
+      // 既存JSON保持＋マージ用関数
+      const fetchJsonMessage = async (channel, messageId) => {
+        try {
+          const msg = await channel.messages.fetch(messageId);
+          let text = msg.content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          return JSON.parse(text);
+        } catch {
+          return {};
+        }
+      };
+
+      const addToJsonMessage = async (channel, messageId, code, data) => {
+        const json = await fetchJsonMessage(channel, messageId);
+        json[code] = data;
+        let msg;
+        try {
+          msg = await channel.messages.fetch(messageId);
+          await msg.edit("```json\n" + JSON.stringify(json, null, 2) + "\n```");
+        } catch {
+          // メッセージがなければ新規作成
+          msg = await channel.send("```json\n" + JSON.stringify(json, null, 2) + "\n```");
+        }
+      };
+
+      // 6桁ランダムコード生成（既存重複チェック・123456除外）
       const generateCode = (existingCodes) => {
         let code;
         do {
@@ -46,29 +65,8 @@ module.exports = {
         return code;
       };
 
-      // JSON取得関数（コードブロック除去）
-      const fetchJsonMessage = async (channel, messageId) => {
-        const msg = await channel.messages.fetch(messageId);
-        let text = msg.content;
-        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          console.error("JSON解析失敗:", e);
-          return {};
-        }
-      };
-
-      // JSONに新規追加＆編集
-      const addToJsonMessage = async (channel, messageId, code, data) => {
-        const json = await fetchJsonMessage(channel, messageId);
-        json[code] = data; // 既存を保持して新規データ追加
-        const msg = await channel.messages.fetch(messageId);
-        await msg.edit("```json\n" + JSON.stringify(json, null, 2) + "\n```");
-      };
-
-      // 不許可の場合
       if (content.includes("不許可")) {
+        // 不許可の場合 → JSONに追加
         const deniedChannel = await interaction.client.channels.fetch(DENIED_JSON_CHANNEL_ID);
         const deniedJson = await fetchJsonMessage(deniedChannel, DENIED_JSON_MESSAGE_ID);
         const code = generateCode(deniedJson);
@@ -79,28 +77,37 @@ module.exports = {
         });
 
       } else if (content.includes("許可")) {
-        // 許可の場合
+        // 許可の場合 → JSON追加 + 招待作成 + DM送信
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
+        const inviteChannel = await interaction.client.channels.fetch(INVITE_CHANNEL_ID);
         const approvedJson = await fetchJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID);
 
         for (let i = 0; i < count; i++) {
           const code = generateCode(approvedJson);
 
+          // Discord招待リンク作成
+          const invite = await inviteChannel.createInvite({
+            maxAge: 0,   // 無期限
+            maxUses: 1,  // 1回のみ使用可能
+            unique: true
+          });
+
+          // JSONに追加
           await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, code, [
             userId,
             japanTime
           ]);
 
-          // DM送信
+          // DM送信（プレーンテキスト）
           try {
-            await interaction.user.send(`申請が許可されました。\nhttps://discord.gg/${code}`);
+            await interaction.user.send(`申請が承認されました。\n${invite.url}`);
           } catch (err) {
             console.warn(`DM送信失敗: ${err}`);
           }
         }
       }
 
-      // 申請完了通知Embed
+      // Embed通知（申請完了）
       const embed = new EmbedBuilder()
         .setTitle("申請が完了しました ✅")
         .setColor("Green")
@@ -110,7 +117,7 @@ module.exports = {
 
     } catch (error) {
       console.error(error);
-      return interaction.reply({ content: "エラーが発生しました。", ephemeral: true });
+      await interaction.reply({ content: "エラーが発生しました。", ephemeral: true });
     }
   }
 };
