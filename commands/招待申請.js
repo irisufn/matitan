@@ -5,7 +5,7 @@ const APPROVAL_CHECK_CHANNEL_ID = "1422876009195114516"; // 許可/不許可判�
 const DENIED_JSON_CHANNEL_ID = "1421706737886564362";    // 不許可JSON格納チャンネル
 const DENIED_JSON_MESSAGE_ID = "1422883649032028254";    // 不許可JSON格納メッセージ
 const APPROVED_JSON_CHANNEL_ID = "1422873409024557056";  // 許可JSON格納チャンネル
-const APPROVED_JSON_MESSAGE_ID = "1422876260069146648";  // 許可JSON格納メッセージ
+const APPROVED_JSON_MESSAGE_ID = "1422879382124494920";  // 許可JSON格納メッセージ
 
 module.exports = {
   data: new SlashCommandBuilder()
