@@ -77,41 +77,50 @@ module.exports = {
         });
 
       } else if (content.includes("許可")) {
-        // 許可 → JSON追加 + 招待作成 + DM送信
+        // 許可 → 招待作成 + DM送信
         const approvedChannel = await interaction.client.channels.fetch(APPROVED_JSON_CHANNEL_ID);
         const inviteChannel = await interaction.client.channels.fetch(INVITE_CHANNEL_ID);
-        const approvedJson = await fetchJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID);
 
         for (let i = 0; i < count; i++) {
           // Discord招待リンク作成
           const invite = await inviteChannel.createInvite({
-            maxAge: 0,   // 無期限
-            maxUses: 1,  // 1回のみ使用可能
+            maxAge: 0,
+            maxUses: 1,
             unique: true
           });
 
-          // JSONに追加（キーは招待コード部分のみ）
           const inviteCode = invite.code;
-          await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, inviteCode, [
-            userId,
-            japanTime
-          ]);
 
-          // DM送信（失敗しても無視）
+          // DM送信（失敗した場合はJSONに追加しない）
+          let dmSuccess = true;
           try {
             await interaction.user.send(`申請が承認されました。\nhttps://discord.gg/${inviteCode}`);
           } catch (err) {
             console.warn(`DM送信失敗: ${err}`);
+            dmSuccess = false;
+
+            // Embedで通知
+            const embed = new EmbedBuilder()
+              .setTitle("DM送信に失敗しました ⚠️")
+              .setColor("Red")
+              .setDescription("コンテンツ＆ソーシャルのダイレクトメッセージをONにして再度お試しください。");
+            await interaction.reply({ embeds: [embed], ephemeral: true });
+          }
+
+          // DM成功時のみ JSON に追加
+          if (dmSuccess) {
+            await addToJsonMessage(approvedChannel, APPROVED_JSON_MESSAGE_ID, inviteCode, [
+              userId,
+              japanTime
+            ]);
           }
         }
       }
 
-      // Embed通知（申請完了）
+      // Embed通知（申請完了・許可の場合のみフッターなし）
       const embed = new EmbedBuilder()
         .setTitle("申請が完了しました ✅")
-        .setColor("Green")
-        .setFooter({ text: `申請キャンセル時は !gm キャンセル <6桁コード> を実行してください。` });
-
+        .setColor("Green");
       await interaction.reply({ embeds: [embed], ephemeral: true });
 
     } catch (error) {
