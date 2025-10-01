@@ -3,9 +3,9 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 // === 設定（IDを適宜置き換えてください） ===
 const APPROVAL_CHECK_CHANNEL_ID = "1422876009195114516"; // 最新メッセージで許可/不許可判定
 const DENIED_JSON_CHANNEL_ID = "1421706737886564362"; // 不許可JSONを保存しているチャンネルID
-const DENIED_JSON_MESSAGE_ID = "1422869974375993364"; // 不許可JSONを保存しているメッセージID
+const DENIED_JSON_MESSAGE_ID = "1422879387124236331"; // 不許可JSONを保存しているメッセージID
 const APPROVED_JSON_CHANNEL_ID = "1422873409024557056"; // 許可JSONを保存しているチャンネルID
-const APPROVED_JSON_MESSAGE_ID = "1422876260069146648"; // 許可JSONを保存しているメッセージID
+const APPROVED_JSON_MESSAGE_ID = "1422879382124494920"; // 許可JSONを保存しているメッセージID
 
 module.exports = {
   data: new SlashCommandBuilder()
