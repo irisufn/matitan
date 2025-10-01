@@ -1,11 +1,11 @@
 module.exports = async (client, message, args) => {
   // 送信先チャンネルID。定数名はすべて大文字とアンダースコアで統一 (慣習)
-  const CHANNEL_ID = '1421706737886564362'; 
+  const CHANNEL_ID = '1422873409024557056'; 
 
   const userData = { 
-    "123456": {
-      "userid": "12345678", 
-      "count": 1
+    "AAAAAA": {
+      "test1": "AAAAAAAA", 
+      "test2": "AAAAAAAA", 
     },
   };
 
