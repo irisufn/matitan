@@ -49,71 +49,77 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // --- deferReplyを最初に呼ぶ ---
         await interaction.deferReply();
 
         const type = interaction.options.getString('type');
 
-        const gearRes = await fetch(GEAR_JSON_URL);
-        const gearData = await gearRes.json();
+        try {
+            const gearRes = await fetch(GEAR_JSON_URL);
+            const gearData = await gearRes.json();
 
-        const localeRes = await fetch(LOCALE_JSON_URL);
-        const locale = await localeRes.json();
+            const localeRes = await fetch(LOCALE_JSON_URL);
+            const locale = await localeRes.json();
 
-        let embeds = [];
+            let embeds = [];
 
-        const processItem = (item) => {
-            const gear = item.gear;
+            const processItem = (item) => {
+                const gear = item.gear;
 
-            // locale経由で日本語化
-            const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
-            const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
+                // locale経由で日本語化
+                const gearName = locale.gear[gear.__splatoon3ink_id]?.name || '不明';
+                const brandName = BRAND_MAP[gear.brand.name] || gear.brand.name;
 
-            return {
-                name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
-                value:
-                    `価格: ${item.price}ゲソ\n` +
-                    `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
-                    `ブランド: ${brandName}`
+                return {
+                    name: `${gearName} (${TYPE_MAP[gear.__typename] || gear.__typename})`,
+                    value:
+                        `価格: ${item.price}ゲソ\n` +
+                        `販売終了: <t:${Math.floor(new Date(item.saleEndTime).getTime() / 1000)}:F>\n` +
+                        `ブランド: ${brandName}`
+                };
             };
-        };
 
-        if (type === 'normal') {
-            const items = gearData.data.gesotown.limitedGears || [];
-            if (items.length === 0) {
-                return interaction.editReply('現在、通常販売のギアはありません。');
+            if (type === 'normal') {
+                const items = gearData.data.gesotown.limitedGears || [];
+                if (items.length === 0) {
+                    return interaction.editReply('現在、通常販売のギアはありません。');
+                }
+
+                const embed = new EmbedBuilder()
+                    .setTitle('ゲソタウン - 通常販売ギア')
+                    .setColor('#11edaa');
+
+                embed.addFields(items.map(processItem));
+                embeds.push(embed);
+
+            } else if (type === 'pickup') {
+                const pickup = gearData.data.gesotown.pickupBrand;
+                if (!pickup || !pickup.brandGears || pickup.brandGears.length === 0) {
+                    return interaction.editReply('現在、ピックアップ販売はありません。');
+                }
+
+                const embed = new EmbedBuilder()
+                    .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
+                    .setColor('#ed751f');
+
+                // ピックアップの大きな画像
+                if (pickup.image?.url) {
+                    embed.setImage(pickup.image.url);
+                }
+
+                // ブランドの得意ギアパワーのアイコンをサムネイルに
+                if (pickup.brand?.usualGearPower?.image?.url) {
+                    embed.setThumbnail(pickup.brand.usualGearPower.image.url);
+                }
+
+                embed.addFields(pickup.brandGears.map(processItem));
+                embeds.push(embed);
             }
 
-            const embed = new EmbedBuilder()
-                .setTitle('ゲソタウン - 通常販売ギア')
-                .setColor('#11edaa');
-
-            embed.addFields(items.map(processItem));
-            embeds.push(embed);
-
-        } else if (type === 'pickup') {
-            const pickup = gearData.data.gesotown.pickupBrand;
-            if (!pickup || !pickup.brandGears || pickup.brandGears.length === 0) {
-                return interaction.editReply('現在、ピックアップ販売はありません。');
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle(`ゲソタウン - ピックアップ: ${BRAND_MAP[pickup.brand.name] || pickup.brand.name}`)
-                .setColor('#ed751f');
-
-            // ピックアップの大きな画像
-            if (pickup.image?.url) {
-                embed.setImage(pickup.image.url);
-            }
-
-            // ブランドの得意ギアパワーのアイコンをサムネイルに
-            if (pickup.brand?.usualGearPower?.image?.url) {
-                embed.setThumbnail(pickup.brand.usualGearPower.image.url);
-            }
-
-            embed.addFields(pickup.brandGears.map(processItem));
-            embeds.push(embed);
+            await interaction.editReply({ embeds });
+        } catch (err) {
+            console.error('ゲソタウン情報取得エラー:', err);
+            await interaction.editReply('ゲソタウン情報の取得に失敗しました。');
         }
-
-        await interaction.editReply({ embeds });
     }
 };
