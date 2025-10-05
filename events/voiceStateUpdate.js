@@ -3,13 +3,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
-const SPECIAL_USER_ID = ['1195248456839737374', '1423201364984594512']; // ←ここを指定ユーザーIDに変更
-const SPECIAL_IMAGE_URL = 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/others/gureoji.png'; // ←退出時の画像URL
+const SPECIAL_USER_IDS = ['1195248456839737374', '1423201364984594512'];
+const SPECIAL_IMAGE_URL = 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/others/gureoji.png';
 
 module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
         try {
+            // BOTは通知しない
             if (newState.member.user.bot) return;
 
             const filePath = path.join(process.cwd(), 'data', 'vcchannels.json');
@@ -21,6 +22,9 @@ module.exports = {
             const member = newState.member;
             const user = member.user;
 
+            // 特別ユーザー判定
+            const isSpecialUser = SPECIAL_USER_IDS.includes(user.id);
+
             // === 入室 ===
             if (!oldChannelId && newChannelId) {
                 const vc = newState.channel;
@@ -29,8 +33,8 @@ module.exports = {
 
                 let description = `<@${user.id}> さんが **${vc.name}** に参加しました。`;
 
-                // 特定ユーザーならランダムメッセージ
-                if (user.id === SPECIAL_USER_ID) {
+                // 特別ユーザーならランダムメッセージ
+                if (isSpecialUser) {
                     const joinMessages = [
                         `<@${user.id}> チャンが **${vc.name}** に参加したヨ😘`,
                         `<@${user.id}> チャン❗ ${vc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
@@ -56,10 +60,10 @@ module.exports = {
                 if (!notifyChannelId) return;
 
                 let description = `<@${user.id}> さんが **${vc.name}** から退出しました。`;
-
-                // 特定ユーザーならランダムメッセージ＋画像
                 let image = null;
-                if (user.id === SPECIAL_USER_ID) {
+
+                // 特別ユーザーならランダムメッセージ＋画像
+                if (isSpecialUser) {
                     const leaveMessages = [
                         `😭💦 <@${user.id}> チャンが ${vc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
                         `<@${user.id}> ﾁｬﾝが ${vc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
@@ -89,22 +93,49 @@ module.exports = {
 
                 // 退室通知
                 if (leaveNotifyId) {
+                    let leaveDescription = `<@${user.id}> さんが **${oldVc.name}** から退出しました。`;
+                    let leaveImage = null;
+
+                    if (isSpecialUser) {
+                        const leaveMessages = [
+                            `😭💦 <@${user.id}> チャンが ${oldVc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
+                            `<@${user.id}> ﾁｬﾝが ${oldVc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
+                        ];
+                        leaveDescription = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
+                        leaveImage = SPECIAL_IMAGE_URL;
+                    }
+
                     const embedLeave = new EmbedBuilder()
                         .setColor('Red')
                         .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                        .setDescription(`<@${user.id}> さんが **${oldVc.name}** から退出しました。`)
+                        .setDescription(leaveDescription)
                         .setTimestamp();
+
+                    if (leaveImage) embedLeave.setImage(leaveImage);
+
                     const notifyChannel = oldState.guild.channels.cache.get(leaveNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedLeave] });
                 }
 
                 // 入室通知
                 if (joinNotifyId) {
+                    let joinDescription = `<@${user.id}> さんが **${newVc.name}** に参加しました。`;
+
+                    if (isSpecialUser) {
+                        const joinMessages = [
+                            `<@${user.id}> チャンが **${newVc.name}** に参加したヨ😘`,
+                            `<@${user.id}> チャン❗ ${newVc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
+                            `<@${user.id}> チャン、${newVc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
+                        ];
+                        joinDescription = joinMessages[Math.floor(Math.random() * joinMessages.length)];
+                    }
+
                     const embedJoin = new EmbedBuilder()
                         .setColor('Green')
                         .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-                        .setDescription(`<@${user.id}> さんが **${newVc.name}** に参加しました。`)
+                        .setDescription(joinDescription)
                         .setTimestamp();
+
                     const notifyChannel = newState.guild.channels.cache.get(joinNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedJoin] });
                 }
