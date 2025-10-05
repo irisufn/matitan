@@ -6,12 +6,23 @@ const { EmbedBuilder } = require('discord.js');
 const SPECIAL_USER_IDS = ['1195248456839737374', '1423201364984594512'];
 const SPECIAL_IMAGE_URL = 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/others/gureoji.png';
 
+// 直近処理済みイベントキャッシュ（重複防止）
+const processedUsers = new Map();
+
 module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
         try {
-            // BOTは通知しない
+            // BOTは無視
             if (newState.member.user.bot) return;
+
+            const user = newState.member.user;
+            const userId = user.id;
+
+            // 重複防止（2秒以内の同一ユーザー処理はスキップ）
+            const now = Date.now();
+            if (processedUsers.has(userId) && now - processedUsers.get(userId) < 2000) return;
+            processedUsers.set(userId, now);
 
             const filePath = path.join(process.cwd(), 'data', 'vcchannels.json');
             if (!fs.existsSync(filePath)) return;
@@ -19,11 +30,7 @@ module.exports = {
 
             const oldChannelId = oldState.channelId;
             const newChannelId = newState.channelId;
-            const member = newState.member;
-            const user = member.user;
-
-            // 特別ユーザー判定
-            const isSpecialUser = SPECIAL_USER_IDS.includes(user.id);
+            const isSpecialUser = SPECIAL_USER_IDS.includes(userId);
 
             // === 入室 ===
             if (!oldChannelId && newChannelId) {
@@ -31,14 +38,13 @@ module.exports = {
                 const notifyChannelId = vcData[vc.name];
                 if (!notifyChannelId) return;
 
-                let description = `<@${user.id}> さんが **${vc.name}** に参加しました。`;
+                let description = `<@${userId}> さんが **${vc.name}** に参加しました。`;
 
-                // 特別ユーザーならランダムメッセージ
                 if (isSpecialUser) {
                     const joinMessages = [
-                        `<@${user.id}> チャンが **${vc.name}** に参加したヨ😘`,
-                        `<@${user.id}> チャン❗ ${vc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                        `<@${user.id}> チャン、${vc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
+                        `<@${userId}> チャンが **${vc.name}** に参加したヨ😘`,
+                        `<@${userId}> チャン❗ ${vc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
+                        `<@${userId}> チャン、${vc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
                     ];
                     description = joinMessages[Math.floor(Math.random() * joinMessages.length)];
                 }
@@ -59,14 +65,13 @@ module.exports = {
                 const notifyChannelId = vcData[vc.name];
                 if (!notifyChannelId) return;
 
-                let description = `<@${user.id}> さんが **${vc.name}** から退出しました。`;
+                let description = `<@${userId}> さんが **${vc.name}** から退出しました。`;
                 let image = null;
 
-                // 特別ユーザーならランダムメッセージ＋画像
                 if (isSpecialUser) {
                     const leaveMessages = [
-                        `😭💦 <@${user.id}> チャンが ${vc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                        `<@${user.id}> ﾁｬﾝが ${vc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
+                        `😭💦 <@${userId}> チャンが ${vc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
+                        `<@${userId}> ﾁｬﾝが ${vc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
                     ];
                     description = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
                     image = SPECIAL_IMAGE_URL;
@@ -93,13 +98,13 @@ module.exports = {
 
                 // 退室通知
                 if (leaveNotifyId) {
-                    let leaveDescription = `<@${user.id}> さんが **${oldVc.name}** から退出しました。`;
+                    let leaveDescription = `<@${userId}> さんが **${oldVc.name}** から退出しました。`;
                     let leaveImage = null;
 
                     if (isSpecialUser) {
                         const leaveMessages = [
-                            `😭💦 <@${user.id}> チャンが ${oldVc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                            `<@${user.id}> ﾁｬﾝが ${oldVc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
+                            `😭💦 <@${userId}> チャンが ${oldVc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
+                            `<@${userId}> ﾁｬﾝが ${oldVc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
                         ];
                         leaveDescription = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
                         leaveImage = SPECIAL_IMAGE_URL;
@@ -119,13 +124,13 @@ module.exports = {
 
                 // 入室通知
                 if (joinNotifyId) {
-                    let joinDescription = `<@${user.id}> さんが **${newVc.name}** に参加しました。`;
+                    let joinDescription = `<@${userId}> さんが **${newVc.name}** に参加しました。`;
 
                     if (isSpecialUser) {
                         const joinMessages = [
-                            `<@${user.id}> チャンが **${newVc.name}** に参加したヨ😘`,
-                            `<@${user.id}> チャン❗ ${newVc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                            `<@${user.id}> チャン、${newVc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
+                            `<@${userId}> チャンが **${newVc.name}** に参加したヨ😘`,
+                            `<@${userId}> チャン❗ ${newVc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
+                            `<@${userId}> チャン、${newVc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
                         ];
                         joinDescription = joinMessages[Math.floor(Math.random() * joinMessages.length)];
                     }
@@ -140,6 +145,7 @@ module.exports = {
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedJoin] });
                 }
             }
+
         } catch (err) {
             console.error('[VC通知] voiceStateUpdate 実行中にエラー:', err);
         }
