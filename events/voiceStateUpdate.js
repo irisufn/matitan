@@ -43,8 +43,6 @@ module.exports = {
                 if (isSpecialUser) {
                     const joinMessages = [
                         `<@${userId}> チャンが **${vc.name}** に参加したヨ😘`,
-                        `<@${userId}> チャン❗ ${vc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                        `<@${userId}> チャン、${vc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
                     ];
                     description = joinMessages[Math.floor(Math.random() * joinMessages.length)];
                 }
@@ -70,8 +68,7 @@ module.exports = {
 
                 if (isSpecialUser) {
                     const leaveMessages = [
-                        `😭💦 <@${userId}> チャンが ${vc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                        `<@${userId}> ﾁｬﾝが ${vc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
+                        `😭💦 <@${userId}> チャンが ${vc.name} からいなくなっちゃった...😢`,
                     ];
                     description = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
                     image = SPECIAL_IMAGE_URL;
@@ -103,8 +100,7 @@ module.exports = {
 
                     if (isSpecialUser) {
                         const leaveMessages = [
-                            `😭💦 <@${userId}> チャンが ${oldVc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                            `<@${userId}> ﾁｬﾝが ${oldVc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
+                            `😭💦 <@${userId}> チャンが ${vc.name} からいなくなっちゃった...😢`
                         ];
                         leaveDescription = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
                         leaveImage = SPECIAL_IMAGE_URL;
@@ -128,9 +124,7 @@ module.exports = {
 
                     if (isSpecialUser) {
                         const joinMessages = [
-                            `<@${userId}> チャンが **${newVc.name}** に参加したヨ😘`,
-                            `<@${userId}> チャン❗ ${newVc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                            `<@${userId}> チャン、${newVc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
+                            `<@${userId}> チャンが **${vc.name}** に参加したヨ😘`
                         ];
                         joinDescription = joinMessages[Math.floor(Math.random() * joinMessages.length)];
                     }
