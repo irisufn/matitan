@@ -1,3 +1,4 @@
+const path = require('node:path');
 const { SlashCommandBuilder } = require('discord.js');
 const {
   joinVoiceChannel,
@@ -11,16 +12,9 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('voice')
-    .setDescription('BOTがVCに参加して音声を再生します')
-    .addStringOption(option =>
-      option
-        .setName('url')
-        .setDescription('再生する音声ファイルのURL (mp3/ogg/webm推奨)')
-        .setRequired(true)
-    ),
+    .setDescription('BOTがVCに参加してローカル音声を再生します'),
 
   async execute(interaction) {
-    const url = interaction.options.getString('url');
     const member = interaction.member;
     const voiceChannel = member.voice.channel;
 
@@ -44,14 +38,17 @@ module.exports = {
     });
 
     await interaction.reply({
-      content: `🔊 接続しました。3秒後に音声を再生します…`,
+      content: `🔊 接続しました。5秒後に音声を再生します…`,
     });
 
-    // 3秒待機
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // 5秒待機
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // 🔊 プロジェクト内 sound フォルダの音声ファイルを指定
+    const audioFilePath = path.join(__dirname, '../sound/Vain_F_minor__bpm_53.mp3');
 
     // 音声リソース作成
-    const resource = createAudioResource(url, { inlineVolume: true });
+    const resource = createAudioResource(audioFilePath, { inlineVolume: true });
     resource.volume.setVolume(0.5); // 音量50%
 
     const player = createAudioPlayer({
@@ -61,9 +58,9 @@ module.exports = {
     player.play(resource);
     connection.subscribe(player);
 
-    // 再生状態ログ
+    // 再生開始
     player.on(AudioPlayerStatus.Playing, () => {
-      interaction.followUp(`🎶 再生開始: ${url}`);
+      interaction.followUp(`🎶 再生開始: Vain_F_minor__bpm_53.mp3`);
     });
 
     // 再生終了後に切断
