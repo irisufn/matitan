@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
 
 // サーバーを起動
 app.listen(3000, () => {
-    console.log(`BOT起動完了`);
+    console.log(`BOT起動完了ですね`);
   });
   
   if (process.env.TOKEN == undefined || process.env.TOKEN == "") {
