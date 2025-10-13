@@ -17,11 +17,11 @@ app.get("/", (req, res) => {
 
 // サーバーを起動
 app.listen(3000, () => {
-    console.log(`BOT起動完了ですね`);
+    console.log(`サーバーを開きました`);
   });
   
   if (process.env.TOKEN == undefined || process.env.TOKEN == "") {
-    console.log("TOKENが未設定です");
+    console.log("TOKENを設定してください");
   }
 
   require('./main.js')

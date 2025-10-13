@@ -137,11 +137,4 @@ client.on(Events.MessageCreate, async message => {
 });
 
 //-------------------- Botログイン --------------------
-client.login(process.env.TOKEN)
-  .then(() => {
-    console.log("✅ Discordにログインしました。");
-  })
-  .catch(err => {
-    console.error("❌ Discordログインエラー:", err);
-    process.exit(1); // 起動失敗としてプロセスを終了
-  });
+client.login(process.env.TOKEN);
