@@ -10,19 +10,19 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildVoiceStates,
   ],
   makeCache: (manager) => {
-    // GuildMessageReactions と GuildVoiceStates のみキャッシュ
+    // 反応とボイスステートのみキャッシュ
     if (manager.name === 'MessageReactionManager' || manager.name === 'VoiceStateManager') {
       return new Collection();
     }
-    // それ以外はキャッシュを空にする（maxSizeオプションは削除）
+    // それ以外はキャッシュを無効化
     return new Collection();
   }
 });
+
 
 //-------------------- 起動時ログ --------------------
 console.log("=== Discord Bot 起動開始 ===");
