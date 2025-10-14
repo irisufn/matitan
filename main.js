@@ -19,7 +19,8 @@ const client = new Client({
     if (manager.name === 'MessageReactionManager' || manager.name === 'VoiceStateManager') {
       return new Collection();
     }
-    return new Collection({ maxSize: 0 }); // それ以外はキャッシュ無効化
+    // それ以外はキャッシュを空にする（maxSizeオプションは削除）
+    return new Collection();
   }
 });
 
