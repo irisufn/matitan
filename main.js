@@ -1,3 +1,4 @@
+// main.js
 require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
@@ -15,22 +16,43 @@ const client = new Client({
   ],
 });
 
-//-------------------- コマンド登録 --------------------
-require('./deploy-commands.js');
+//-------------------- 起動時ログ --------------------
+console.log("=== Discord Bot 起動開始 ===");
+if (!process.env.TOKEN) {
+  console.error("❌ TOKEN が設定されていません (.env or Render環境変数を確認してください)");
+} else {
+  console.log("✅ TOKEN検出:", process.env.TOKEN.slice(0, 10) + "...");
+}
 
-// コマンドを格納する Collection
+//-------------------- コマンド登録 --------------------
+try {
+  require('./deploy-commands.js');
+  console.log("✅ deploy-commands.js を読み込みました");
+} catch (err) {
+  console.warn("⚠️ deploy-commands.js の読み込みに失敗:", err.message);
+}
+
+// コマンドコレクション
 client.commands = new Collection();
 
-// コマンド読み込み関数
+//-------------------- コマンド読み込み --------------------
 function loadCommands() {
   const commandsPath = path.join(__dirname, 'commands');
-  const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+  if (!fs.existsSync(commandsPath)) {
+    console.warn("⚠️ commands フォルダが見つかりません");
+    return;
+  }
 
+  const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
   for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    client.commands.set(command.data.name, command);
-    console.log(`-> [Loaded Command] ${file}`);
+    try {
+      const filePath = path.join(commandsPath, file);
+      const command = require(filePath);
+      client.commands.set(command.data.name, command);
+      console.log(`-> [Loaded Command] ${file}`);
+    } catch (err) {
+      console.error(`❌ コマンド ${file} の読み込みに失敗:`, err.message);
+    }
   }
 }
 loadCommands();
@@ -38,30 +60,40 @@ loadCommands();
 //-------------------- イベント読み込み --------------------
 function loadEvents() {
   const eventsPath = path.join(__dirname, 'events');
-  const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+  if (!fs.existsSync(eventsPath)) {
+    console.warn("⚠️ events フォルダが見つかりません");
+    return;
+  }
 
+  const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
   for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = require(filePath);
-
-    if (event.once) {
-      client.once(event.name, (...args) => event.execute(...args));
-    } else {
-      client.on(event.name, (...args) => event.execute(...args));
+    try {
+      const filePath = path.join(eventsPath, file);
+      const event = require(filePath);
+      if (Array.isArray(event)) continue; // 配列は別関数で処理
+      if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args));
+      } else {
+        client.on(event.name, (...args) => event.execute(...args));
+      }
+      console.log(`-> [Loaded Event] ${file}`);
+    } catch (err) {
+      console.error(`❌ イベント ${file} の読み込みに失敗:`, err.message);
     }
-
-    console.log(`-> [Loaded Event] ${file}`);
   }
 }
 
-// イベントファイルを読み込む（配列対応）
+// 複数イベント対応
 function loadEventArrays() {
   const eventsPath = path.join(__dirname, 'events');
-  const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+  if (!fs.existsSync(eventsPath)) return;
+
+  const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
   for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const eventModule = require(filePath);
-    if (Array.isArray(eventModule)) {
+    try {
+      const filePath = path.join(eventsPath, file);
+      const eventModule = require(filePath);
+      if (!Array.isArray(eventModule)) continue;
       for (const event of eventModule) {
         if (event.once) {
           client.once(event.name, (...args) => event.execute(...args));
@@ -70,66 +102,57 @@ function loadEventArrays() {
         }
         console.log(`-> [Loaded Event] ${file} (${event.name})`);
       }
+    } catch (err) {
+      console.error(`❌ 複数イベント定義の ${file} の読み込みに失敗:`, err.message);
     }
   }
 }
-
 loadEvents();
 loadEventArrays();
 
-//-------------------- コマンド実行 --------------------
+//-------------------- Interaction (スラッシュコマンド) --------------------
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
+
   try {
-    await command.execute(interaction); // interactionのみ渡す
+    await command.execute(interaction);
   } catch (error) {
-    console.error(error);
+    console.error(`❌ コマンド実行中エラー (${interaction.commandName}):`, error);
     try {
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply('コマンド実行中にエラーが発生しました');
       } else {
         await interaction.reply({ content: 'コマンド実行中にエラーが発生しました', ephemeral: true });
       }
-    } catch (e) {}
+    } catch {}
   }
 });
 
-//-------------------- !gm, !adm で動的に処理ファイルを呼び出す --------------------
+//-------------------- !gm / !adm 動的処理 --------------------
 client.on(Events.MessageCreate, async message => {
-  // Bot自身やDMは無視
   if (message.author.bot || !message.guild) return;
-
-  // !gmまたは!admコマンド専用
   let prefix = null;
   if (message.content.startsWith('!gm')) prefix = '!gm';
   if (message.content.startsWith('!adm')) prefix = '!adm';
   if (!prefix) return;
 
-  // 引数を分割
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   if (args.length === 0) return;
 
-  // normal/adminサブフォルダを参照
   let handlerPath;
-  if (prefix === '!gm') {
-    handlerPath = `./gm_handlers/normal/${args[0]}.js`;
-  } else if (prefix === '!adm') {
-    handlerPath = `./gm_handlers/admin/${args[0]}.js`;
-  }
+  if (prefix === '!gm') handlerPath = `./gm_handlers/normal/${args[0]}.js`;
+  else if (prefix === '!adm') handlerPath = `./gm_handlers/admin/${args[0]}.js`;
+
   try {
     const handler = require(handlerPath);
     await handler(client, message, args);
   } catch (error) {
-    if (prefix === '!gm') {
-      // !gmは何もせずスルー
-      return;
-    } else if (prefix === '!adm') {
-      if (error.code === 'MODULE_NOT_FOUND' && error.message.includes(handlerPath.replace('./', ''))) {
+    if (prefix === '!adm') {
+      if (error.code === 'MODULE_NOT_FOUND') {
         await message.reply('管理者コマンドが無効です');
       } else {
-        // それ以外のエラーはログ出力のみ
         console.error(error);
       }
     }
@@ -137,4 +160,18 @@ client.on(Events.MessageCreate, async message => {
 });
 
 //-------------------- Botログイン --------------------
-client.login(process.env.TOKEN);
+client.login(process.env.TOKEN)
+  .then(() => {
+    console.log("✅ Discordへのログイン要求を送信しました...");
+  })
+  .catch(err => {
+    console.error("❌ Discordへのログインに失敗しました:");
+    console.error(err);
+  });
+
+//-------------------- Readyが来ない場合の警告 --------------------
+setTimeout(() => {
+  if (!client.user) {
+    console.warn("⚠️ 注意: 10秒経過しても ready イベントが発火していません。TOKENの有効性・権限を確認してください。");
+  }
+}, 10000);
