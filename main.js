@@ -14,6 +14,13 @@ const client = new Client({
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildVoiceStates,
   ],
+  makeCache: (manager) => {
+    // GuildMessageReactions と GuildVoiceStates のみキャッシュ
+    if (manager.name === 'MessageReactionManager' || manager.name === 'VoiceStateManager') {
+      return new Collection();
+    }
+    return new Collection({ maxSize: 0 }); // それ以外はキャッシュ無効化
+  }
 });
 
 //-------------------- 起動時ログ --------------------
@@ -38,16 +45,11 @@ client.commands = new Collection();
 //-------------------- コマンド読み込み --------------------
 function loadCommands() {
   const commandsPath = path.join(__dirname, 'commands');
-  if (!fs.existsSync(commandsPath)) {
-    console.warn("⚠️ commands フォルダが見つかりません");
-    return;
-  }
-
+  if (!fs.existsSync(commandsPath)) return console.warn("⚠️ commands フォルダが見つかりません");
   const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
   for (const file of commandFiles) {
     try {
-      const filePath = path.join(commandsPath, file);
-      const command = require(filePath);
+      const command = require(path.join(commandsPath, file));
       client.commands.set(command.data.name, command);
       console.log(`-> [Loaded Command] ${file}`);
     } catch (err) {
@@ -60,22 +62,15 @@ loadCommands();
 //-------------------- イベント読み込み --------------------
 function loadEvents() {
   const eventsPath = path.join(__dirname, 'events');
-  if (!fs.existsSync(eventsPath)) {
-    console.warn("⚠️ events フォルダが見つかりません");
-    return;
-  }
+  if (!fs.existsSync(eventsPath)) return;
 
   const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
   for (const file of eventFiles) {
     try {
-      const filePath = path.join(eventsPath, file);
-      const event = require(filePath);
-      if (Array.isArray(event)) continue; // 配列は別関数で処理
-      if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args));
-      } else {
-        client.on(event.name, (...args) => event.execute(...args));
-      }
+      const event = require(path.join(eventsPath, file));
+      if (Array.isArray(event)) continue;
+      if (event.once) client.once(event.name, (...args) => event.execute(...args));
+      else client.on(event.name, (...args) => event.execute(...args));
       console.log(`-> [Loaded Event] ${file}`);
     } catch (err) {
       console.error(`❌ イベント ${file} の読み込みに失敗:`, err.message);
@@ -91,15 +86,11 @@ function loadEventArrays() {
   const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith('.js'));
   for (const file of eventFiles) {
     try {
-      const filePath = path.join(eventsPath, file);
-      const eventModule = require(filePath);
+      const eventModule = require(path.join(eventsPath, file));
       if (!Array.isArray(eventModule)) continue;
       for (const event of eventModule) {
-        if (event.once) {
-          client.once(event.name, (...args) => event.execute(...args));
-        } else {
-          client.on(event.name, (...args) => event.execute(...args));
-        }
+        if (event.once) client.once(event.name, (...args) => event.execute(...args));
+        else client.on(event.name, (...args) => event.execute(...args));
         console.log(`-> [Loaded Event] ${file} (${event.name})`);
       }
     } catch (err) {
@@ -116,9 +107,8 @@ client.on(Events.InteractionCreate, async interaction => {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
+  try { await command.execute(interaction); }
+  catch (error) {
     console.error(`❌ コマンド実行中エラー (${interaction.commandName}):`, error);
     try {
       if (interaction.deferred || interaction.replied) {
@@ -150,28 +140,18 @@ client.on(Events.MessageCreate, async message => {
     await handler(client, message, args);
   } catch (error) {
     if (prefix === '!adm') {
-      if (error.code === 'MODULE_NOT_FOUND') {
-        await message.reply('管理者コマンドが無効です');
-      } else {
-        console.error(error);
-      }
+      if (error.code === 'MODULE_NOT_FOUND') await message.reply('管理者コマンドが無効です');
+      else console.error(error);
     }
   }
 });
 
 //-------------------- Botログイン --------------------
 client.login(process.env.TOKEN)
-  .then(() => {
-    console.log("✅ Discordへのログイン要求を送信しました...");
-  })
-  .catch(err => {
-    console.error("❌ Discordへのログインに失敗しました:");
-    console.error(err);
-  });
+  .then(() => console.log("✅ Discordへのログイン要求を送信しました..."))
+  .catch(err => console.error("❌ Discordへのログインに失敗しました:", err));
 
 //-------------------- Readyが来ない場合の警告 --------------------
 setTimeout(() => {
-  if (!client.user) {
-    console.warn("⚠️ 注意: 10秒経過しても ready イベントが発火していません。TOKENの有効性・権限を確認してください。");
-  }
+  if (!client.user) console.warn("⚠️ 注意: 10秒経過しても ready イベントが発火していません。TOKENの有効性・権限を確認してください。");
 }, 10000);
