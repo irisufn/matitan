@@ -6,21 +6,23 @@ module.exports = {
     .setDescription('フレンドコードを表示'),
 
   async execute(interaction) {
-    const TARGET_CHANNEL_ID = '1395595186847092827'; //フレンドコード投稿用チャンネルID
-    const GUIDE_CHANNEL_ID = '1421663161647497357'; //問い合わせ送信先チャンネルID
+    const TARGET_CHANNEL_ID = '1395595186847092827'; // フレンドコード投稿用チャンネルID
+    const GUIDE_CHANNEL_ID = '1421663161647497357'; // 問い合わせ送信先チャンネルID
 
     try {
+      // 👇 まず deferReply で返信期限を延長
+      await interaction.deferReply({ ephemeral: true });
+
       const channel = interaction.client.channels.cache.get(TARGET_CHANNEL_ID);
 
       if (!channel) {
-        return await interaction.reply({
+        return await interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setTitle('エラー')
               .setDescription('指定のチャンネルが見つかりません。')
               .setColor(0xFF0000),
           ],
-          ephemeral: true,
         });
       }
 
@@ -30,34 +32,32 @@ module.exports = {
       const userMessage = userMessages.sort((a, b) => b.createdTimestamp - a.createdTimestamp)[0];
 
       if (!userMessage) {
-        return await interaction.reply({
+        return await interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setTitle('フレンドコードが見つかりませんでした')
               .setDescription(`あなたのフレンドコードが見つかりませんでした。\n<#${GUIDE_CHANNEL_ID}> にフレンドコードを投稿してください。`)
               .setColor(0xFF0000),
           ],
-          ephemeral: true,
         });
       }
 
       // フレンドコード抽出
       const match = userMessage.content.match(/(?:SW[-\s　,.]?)?(\d{4})[-\s　,.]?(\d{4})[-\s　,.]?(\d{4})/i);
       if (!match) {
-        return await interaction.reply({
+        return await interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setTitle('フレンドコードが見つかりませんでした')
               .setDescription(`フレンドコードが見つかりません。\n<#${GUIDE_CHANNEL_ID}> に投稿してください。`)
               .setColor(0xFF0000),
           ],
-          ephemeral: true,
         });
       }
 
       const code = `SW-${match[1]}-${match[2]}-${match[3]}`;
 
-      return await interaction.reply({
+      return await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setTitle('フレンドコード')
@@ -69,10 +69,14 @@ module.exports = {
 
     } catch (error) {
       console.error(error);
-      if (!interaction.replied) {
+      if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
-          content: 'コマンド実行中にエラーが発生しました',
+          content: 'コマンド実行中にエラーが発生しました。',
           ephemeral: true,
+        });
+      } else {
+        await interaction.editReply({
+          content: 'コマンド実行中にエラーが発生しました。',
         });
       }
     }
