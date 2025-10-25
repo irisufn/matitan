@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionsBitField } = require('discord.js');
-const config = require('../config.json');
+const config = require('./config.json');const config = require('../config.json');
 
 // 定数
 const ROLE_ID = '1399382918324813965'; // 認証ロールのID
