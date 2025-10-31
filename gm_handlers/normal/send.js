@@ -28,11 +28,9 @@ module.exports = async (client, message, args) => {
 
   // Embed作成
   const embed = new EmbedBuilder()
-    .setTitle('📢 お知らせ')
     .setDescription(text)
     .setColor(color)
     .setTimestamp()
-    .setFooter({ text: `送信者: ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
 
   // 送信
   try {
