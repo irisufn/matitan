@@ -1,50 +1,45 @@
 const { Events } = require("discord.js");
+const fs = require("node:fs");
+const path = require("node:path");
 
 module.exports = {
-  name: Events.GuildMemberUpdate,
+  name: Events.VoiceStateUpdate,
 
-  async execute(oldMember, newMember) {
+  async execute(oldState, newState) {
     try {
-      // === タイムアウト検知 ===
-      const beforeTimeout = oldMember.communicationDisabledUntilTimestamp;
-      const afterTimeout = newMember.communicationDisabledUntilTimestamp;
+      const TARGET_USER_ID = "1102749583169294357"; // 監視対象
 
-      // タイムアウトが新たに設定されたときのみ反応
-      if (!beforeTimeout && afterTimeout) {
-        // 監視対象ユーザーID（タイムアウトを実行した人）
-        const TARGET_USER_ID = "1102749583169294357"; // ←ここをあなたの指定IDに変更
+      // VC参加時のみ
+      if (!oldState.channel && newState.channel) {
+        if (newState.member.id === TARGET_USER_ID) {
+          const vcName = newState.channel.name;
 
-        // Audit Logから直近のタイムアウト実行者を取得
-        const fetchedLogs = await newMember.guild.fetchAuditLogs({
-          limit: 1,
-          type: 24, // MEMBER_UPDATE（タイムアウトも含む）
-        });
+          // vcchannels.jsonを読み込む
+          const filePath = path.join(__dirname, "../data/vcchannels.json");
+          if (!fs.existsSync(filePath)) return;
 
-        const log = fetchedLogs.entries.first();
-        if (!log) return;
+          const jsonData = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
-        const executor = log.executor;
-        const target = log.target;
-
-        // タイムアウトさせた人が指定IDかチェック
-        if (executor.id === TARGET_USER_ID && target.id === newMember.id) {
-          console.log(
-            `[Timeout Detected] ${executor.tag} が ${target.tag} をタイムアウトしました。`
+          // VC名と一致するものがあるかチェック
+          const matchedEntry = Object.entries(jsonData).find(
+            ([name]) => name === vcName
           );
 
-          // 1秒後に解除
-          setTimeout(async () => {
-            try {
-              await newMember.timeout(null);
-              console.log(`[Timeout Removed] ${target.tag} のタイムアウトを解除しました。`);
-            } catch (err) {
-              console.error("解除エラー:", err);
+          if (matchedEntry) {
+            const [_, channelId] = matchedEntry;
+
+            const channel = newState.guild.channels.cache.get(channelId);
+            if (channel && channel.isTextBased()) {
+              // GIF送信（URLはここに指定）
+              const GIF_URL = "https://c.tenor.com/yhFq6N5tvUEAAAAC/tenor.gif";
+              channel.send({ content: GIF_URL });
+              console.log(`GIF送信完了: ${vcName} -> ${channelId}`);
             }
-          }, 1000);
+          }
         }
       }
     } catch (error) {
-      console.error("guildMemberUpdateイベント処理エラー:", error);
+      console.error("voiceStateUpdateイベントエラー:", error);
     }
   },
 };
