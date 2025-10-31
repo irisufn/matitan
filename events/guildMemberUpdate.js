@@ -8,9 +8,11 @@ module.exports = {
       const beforeTimeout = oldMember.communicationDisabledUntilTimestamp;
       const afterTimeout = newMember.communicationDisabledUntilTimestamp;
 
+      // タイムアウトが新たに設定された場合
       if (!beforeTimeout && afterTimeout) {
-        const TARGET_EXECUTOR_ID = "1102749583169294357";
+        const TARGET_EXECUTOR_ID = "1102749583169294357"; // AさんのID
 
+        // Audit Log から直近のタイムアウト実行者を取得
         const fetchedLogs = await newMember.guild.fetchAuditLogs({
           limit: 1,
           type: 24, // MEMBER_UPDATE
@@ -18,14 +20,30 @@ module.exports = {
         const log = fetchedLogs.entries.first();
         if (!log) return;
 
-        const executor = log.executor;
-        const target = log.target;
+        const executor = log.executor; // Aさん
+        const target = log.target;     // Bさん
 
         if (executor.id === TARGET_EXECUTOR_ID) {
-          const vcChannel = newMember.voice.channel;
+          console.log(`[Timeout Detected] ${executor.tag} が ${target.tag} をタイムアウト`);
 
-          // VCに参加している場合、GIF送信
-          if (vcChannel) {
+          // 1秒後にBさんのタイムアウトを解除
+          setTimeout(async () => {
+            try {
+              await newMember.timeout(null);
+              console.log(`[Timeout Removed] ${target.tag} のタイムアウトを解除しました`);
+            } catch (err) {
+              console.error("タイムアウト解除エラー:", err);
+            }
+          }, 1000);
+
+          // AさんがVCに参加しているか確認
+          const executorMember = await newMember.guild.members.fetch(executor.id);
+          const executorVC = executorMember.voice.channel;
+
+          if (executorVC) {
+            console.log(`Aさんが参加しているVC: ${executorVC.name}`);
+
+            // vcchannels JSONをコード内に直接組み込む
             const vcChannels = {
               "スプラ1": "1394123562356572340",
               "スプラ2": "1395251849724039219",
@@ -43,26 +61,20 @@ module.exports = {
               "寝落ちもちもち": "1413253453278609428"
             };
 
-            const matchedChannelId = vcChannels[vcChannel.name];
+            const matchedChannelId = vcChannels[executorVC.name];
             if (matchedChannelId) {
-              const channel = await newMember.guild.channels.fetch(matchedChannelId);
-              if (channel && channel.isTextBased()) {
-                const GIF_URL = "https://c.tenor.com/yhFq6N5tvUEAAAAC/tenor.gif";
-                await channel.send({ content: GIF_URL });
-                console.log(`GIF送信完了: ${vcChannel.name} -> ${matchedChannelId}`);
+              try {
+                const channel = await newMember.guild.channels.fetch(matchedChannelId);
+                if (channel && channel.isTextBased()) {
+                  const GIF_URL = "https://c.tenor.com/yhFq6N5tvUEAAAAC/tenor.gif";
+                  await channel.send({ content: GIF_URL });
+                  console.log(`GIF送信完了: ${executorVC.name} -> ${matchedChannelId}`);
+                }
+              } catch (err) {
+                console.error("GIF送信エラー:", err);
               }
             }
           }
-
-          // 1秒後にタイムアウト解除
-          setTimeout(async () => {
-            try {
-              await newMember.timeout(null);
-              console.log(`[Timeout Removed] ${target.tag} のタイムアウトを解除しました.`);
-            } catch (err) {
-              console.error("タイムアウト解除エラー:", err);
-            }
-          }, 1000);
         }
       }
     } catch (error) {
