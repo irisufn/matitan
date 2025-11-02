@@ -56,7 +56,7 @@ module.exports = async (client, message, args) => {
 
     const resultEmbed = new EmbedBuilder()
       .setColor(0x00FFFF)
-      .setTitle('ロール操作結果')
+      .setTitle('ロール付与・削除')
       .setDescription(results.join('\n'))
       .setTimestamp();
 
