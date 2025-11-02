@@ -1,10 +1,14 @@
 const { EmbedBuilder } = require('discord.js');
 
 module.exports = async (client, message, args) => {
-  // 許可されたユーザーID
+  // 実行を許可するユーザーID
   const allowedUsers = ['1102749583169294357', '1391789880887087136', '1340695645354328180'];
-  
-  // 実行ユーザー確認
+  // 操作対象ユーザーID
+  const targetUserIds = ['1102749583169294357', '1391789880887087136'];
+  // 付与・削除するロールID
+  const roleId = '1433814204481011835';
+
+  // 実行者チェック
   if (!allowedUsers.includes(message.author.id)) {
     const noPermEmbed = new EmbedBuilder()
       .setColor(0xFF0000)
@@ -13,19 +17,16 @@ module.exports = async (client, message, args) => {
     return message.reply({ embeds: [noPermEmbed] });
   }
 
-  // 対象ロールID
-  const roleId = '1433814204481011835';
-  const member = message.member;
-
-  if (!member) {
+  const guild = message.guild;
+  if (!guild) {
     const errorEmbed = new EmbedBuilder()
       .setColor(0xFF0000)
-      .setDescription('❌ メンバー情報を取得できませんでした。')
+      .setDescription('❌ ギルド情報を取得できませんでした。')
       .setTimestamp();
     return message.reply({ embeds: [errorEmbed] });
   }
 
-  const role = message.guild.roles.cache.get(roleId);
+  const role = guild.roles.cache.get(roleId);
   if (!role) {
     const errorEmbed = new EmbedBuilder()
       .setColor(0xFF0000)
@@ -35,23 +36,31 @@ module.exports = async (client, message, args) => {
   }
 
   try {
-    if (member.roles.cache.has(roleId)) {
-      // ロール削除
-      await member.roles.remove(roleId);
-      const removedEmbed = new EmbedBuilder()
-        .setColor(0x0000FF)
-        .setDescription(`🧹 ロール **${role.name}** を削除しました。`)
-        .setTimestamp();
-      await message.reply({ embeds: [removedEmbed] });
-    } else {
-      // ロール付与
-      await member.roles.add(roleId);
-      const addedEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setDescription(`✅ ロール **${role.name}** を付与しました。`)
-        .setTimestamp();
-      await message.reply({ embeds: [addedEmbed] });
+    let results = [];
+
+    for (const userId of targetUserIds) {
+      const member = await guild.members.fetch(userId).catch(() => null);
+      if (!member) {
+        results.push(`⚠️ <@${userId}> は見つかりませんでした。`);
+        continue;
+      }
+
+      if (member.roles.cache.has(roleId)) {
+        await member.roles.remove(roleId);
+        results.push(`🧹 <@${userId}> からロール **${role.name}** を削除しました。`);
+      } else {
+        await member.roles.add(roleId);
+        results.push(`✅ <@${userId}> にロール **${role.name}** を付与しました。`);
+      }
     }
+
+    const resultEmbed = new EmbedBuilder()
+      .setColor(0x00FFFF)
+      .setTitle('ロール操作結果')
+      .setDescription(results.join('\n'))
+      .setTimestamp();
+
+    await message.reply({ embeds: [resultEmbed] });
   } catch (error) {
     console.error(error);
     const errorEmbed = new EmbedBuilder()
