@@ -3,9 +3,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { EmbedBuilder } = require('discord.js');
 
-const SPECIAL_USER_IDS = ['1195248456839737374', '1423201364984594512'];
-const SPECIAL_IMAGE_URL = 'https://raw.githubusercontent.com/irisufn/images_matitan/refs/heads/main/others/gureoji.png';
-
 // 直近処理済みイベントキャッシュ（重複防止）
 const processedUsers = new Map();
 
@@ -30,7 +27,6 @@ module.exports = {
 
             const oldChannelId = oldState.channelId;
             const newChannelId = newState.channelId;
-            const isSpecialUser = SPECIAL_USER_IDS.includes(userId);
 
             // === 入室 ===
             if (!oldChannelId && newChannelId) {
@@ -38,16 +34,7 @@ module.exports = {
                 const notifyChannelId = vcData[vc.name];
                 if (!notifyChannelId) return;
 
-                let description = `<@${userId}> さんが **${vc.name}** に参加しました。`;
-
-                if (isSpecialUser) {
-                    const joinMessages = [
-                        `<@${userId}> チャンが **${vc.name}** に参加したヨ😘`,
-                        `<@${userId}> チャン❗ ${vc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                        `<@${userId}> チャン、${vc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
-                    ];
-                    description = joinMessages[Math.floor(Math.random() * joinMessages.length)];
-                }
+                const description = `<@${userId}> さんが **${vc.name}** に参加しました。`;
 
                 const embed = new EmbedBuilder()
                     .setColor('Green')
@@ -65,25 +52,13 @@ module.exports = {
                 const notifyChannelId = vcData[vc.name];
                 if (!notifyChannelId) return;
 
-                let description = `<@${userId}> さんが **${vc.name}** から退出しました。`;
-                let image = null;
-
-                if (isSpecialUser) {
-                    const leaveMessages = [
-                        `😭💦 <@${userId}> チャンが ${vc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                        `<@${userId}> ﾁｬﾝが ${vc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
-                    ];
-                    description = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
-                    image = SPECIAL_IMAGE_URL;
-                }
+                const description = `<@${userId}> さんが **${vc.name}** から退出しました。`;
 
                 const embed = new EmbedBuilder()
                     .setColor('Red')
                     .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
                     .setDescription(description)
                     .setTimestamp();
-
-                if (image) embed.setImage(image);
 
                 const notifyChannel = oldState.guild.channels.cache.get(notifyChannelId);
                 if (notifyChannel) await notifyChannel.send({ embeds: [embed] });
@@ -98,17 +73,7 @@ module.exports = {
 
                 // 退室通知
                 if (leaveNotifyId) {
-                    let leaveDescription = `<@${userId}> さんが **${oldVc.name}** から退出しました。`;
-                    let leaveImage = null;
-
-                    if (isSpecialUser) {
-                        const leaveMessages = [
-                            `😭💦 <@${userId}> チャンが ${oldVc.name} からいなくなっちゃった...😢 おじさん🤓、寂しくて、死んじゃうヨ😂😂 またすぐに、来てくれるカナ❓ 待ってるネ😉`,
-                            `<@${userId}> ﾁｬﾝが ${oldVc.name} から消えちゃった...🥺 ボク、さみしくて、涙が止まらないよ😭😭 ナンチャッテ💦 またお顔を見せてネ😘`
-                        ];
-                        leaveDescription = leaveMessages[Math.floor(Math.random() * leaveMessages.length)];
-                        leaveImage = SPECIAL_IMAGE_URL;
-                    }
+                    const leaveDescription = `<@${userId}> さんが **${oldVc.name}** から退出しました。`;
 
                     const embedLeave = new EmbedBuilder()
                         .setColor('Red')
@@ -116,24 +81,13 @@ module.exports = {
                         .setDescription(leaveDescription)
                         .setTimestamp();
 
-                    if (leaveImage) embedLeave.setImage(leaveImage);
-
                     const notifyChannel = oldState.guild.channels.cache.get(leaveNotifyId);
                     if (notifyChannel) await notifyChannel.send({ embeds: [embedLeave] });
                 }
 
                 // 入室通知
                 if (joinNotifyId) {
-                    let joinDescription = `<@${userId}> さんが **${newVc.name}** に参加しました。`;
-
-                    if (isSpecialUser) {
-                        const joinMessages = [
-                            `<@${userId}> チャンが **${newVc.name}** に参加したヨ😘`,
-                            `<@${userId}> チャン❗ ${newVc.name} に来てくれたんだネッ😘💕 待ってたヨ〜😊 疲れてないカナ❓ ゆっくり楽しんでネ🎵`,
-                            `<@${userId}> チャン、${newVc.name} で何してるの❓ 二人きりで話したいナァ💓（笑） ナンチャッテ😅 今度、美味しい☕でも奢ってあげるヨ👍 お楽しみに✨`
-                        ];
-                        joinDescription = joinMessages[Math.floor(Math.random() * joinMessages.length)];
-                    }
+                    const joinDescription = `<@${userId}> さんが **${newVc.name}** に参加しました。`;
 
                     const embedJoin = new EmbedBuilder()
                         .setColor('Green')
