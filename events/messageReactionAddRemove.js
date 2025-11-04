@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 
 const TARGET_CHANNEL_ID = '1399782981140353126'; // 募集専用チャンネルID
 const HAND_EMOJI = '✋';
-const BOT_ID = 'ここにこのBOTのクライアントIDを入れてください'; // ←忘れずに設定
+const BOT_ID = '1419487057197269157'; // ←忘れずに設定
 
 module.exports = (client) => {
   // リアクション追加時
