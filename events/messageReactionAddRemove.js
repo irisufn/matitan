@@ -20,7 +20,7 @@ module.exports = (client) => {
     if (!embed) return;
 
     // 募集人数を抽出（例: "@3" → 3）
-    const peopleMatch = embed.fields.find(f => f.name.includes('募集人数'));
+    const peopleMatch = embed.fields.find(f => f.name.includes('人数'));
     if (!peopleMatch) return;
     const match = peopleMatch.value.match(/@(\d+)/);
     const maxPeople = match ? parseInt(match[1], 10) : null;
@@ -76,7 +76,7 @@ module.exports = (client) => {
     if (!embed) return;
 
     // 募集人数を抽出
-    const peopleMatch = embed.fields.find(f => f.name.includes('募集人数'));
+    const peopleMatch = embed.fields.find(f => f.name.includes('人数'));
     if (!peopleMatch) return;
     const match = peopleMatch.value.match(/@(\d+)/);
     const maxPeople = match ? parseInt(match[1], 10) : null;
