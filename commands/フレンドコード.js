@@ -11,7 +11,7 @@ module.exports = {
 
     try {
       // 👇 まず deferReply で返信期限を延長
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ ephemeral: false });
 
       const channel = interaction.client.channels.cache.get(TARGET_CHANNEL_ID);
 
@@ -72,7 +72,7 @@ module.exports = {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
           content: 'コマンド実行中にエラーが発生しました。',
-          ephemeral: true,
+          ephemeral: false,
         });
       } else {
         await interaction.editReply({
