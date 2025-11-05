@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 
-const TARGET_CHANNEL_ID = '1399782981140353126'; // 募集専用チャンネルID
+const TARGET_CHANNEL_ID = '1420404689991762060'; // 募集専用チャンネルID
 const HAND_EMOJI = '✋';
 const BOT_ID = '1419487057197269157'; // BOTのID
 

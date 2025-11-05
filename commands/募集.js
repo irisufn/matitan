@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 // 募集を投稿するチャンネルID
-const TARGET_CHANNEL_ID = '1399782981140353126';
+const TARGET_CHANNEL_ID = '1420404689991762060';
 
 module.exports = {
   data: new SlashCommandBuilder()
