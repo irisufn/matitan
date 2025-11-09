@@ -85,7 +85,8 @@ module.exports = {
       .addChoices(
         { name: 'ルール違反', value: 'ルール違反' },
         { name: 'いやがらせ', value: 'いやがらせ' },
-        { name: '荒らし', value: '荒らし' }
+        { name: '荒らし', value: '荒らし' },
+        { name: 'その他', value: 'その他' },
       )),
 
   async execute(interaction) {
