@@ -5,7 +5,6 @@ const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// JSON管理用の固定チャンネルID・メッセージID
 const DATA_CHANNEL_ID = '1422204415036752013';
 const DATA_MESSAGE_ID = '1436925986594750496';
 
@@ -21,7 +20,10 @@ module.exports = {
         try {
             const channel = await client.channels.fetch(DATA_CHANNEL_ID);
             const msg = await channel.messages.fetch(DATA_MESSAGE_ID);
-            let data = JSON.parse(msg.content);
+
+            // 🔹 修正: ```json ``` を除去してから JSON.parse
+            const content = msg.content.replace(/```json|```/g, '').trim();
+            let data = JSON.parse(content);
 
             const now = dayjs().tz("Asia/Tokyo");
             let modified = false;
@@ -31,7 +33,7 @@ module.exports = {
 
                 // infractions内の最新date + durationを取得
                 const latestExpiry = user.infractions
-                    .map(i => dayjs(i.date).tz("Asia/Tokyo").add(i.duration || 0, 'minute'))
+                    .map(i => dayjs(i.date).tz("Asia/Tokyo").add(i.duration || 0, 'day'))
                     .sort((a, b) => b - a)[0];
 
                 if (latestExpiry.isBefore(now)) {
