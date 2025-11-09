@@ -10,15 +10,44 @@ const ALLOWED_ROLE_ID = '1394113342876155914';
 const DATA_CHANNEL_ID = '1422204415036752013';
 const DATA_MESSAGE_ID = '1436925986594750496';
 
-// expiry計算
-function getExpiry(type) {
+// expiry計算（期限）
+function getExpiry(status) {
   const now = dayjs().tz('Asia/Tokyo');
-  switch (type) {
-    case '警告': return null;
-    case '厳重注意': return now.add(10, 'minute');
-    case '停止': return now.add(1, 'day');
+  switch (status) {
+    case '警告': return now.add(1, 'day');
+    case '厳重注意': return now.add(3, 'day');
+    case '停止': return now.add(5, 'day');
     default: return null;
   }
+}
+
+// count から状況を取得
+function getStatus(count) {
+  if (count >= 5) return '停止';
+  if (count >= 4) return '厳重注意';
+  return '警告';
+}
+
+// ステータスごとの色
+function getColor(status) {
+  switch (status) {
+    case '警告': return 0xFFFF00; // 黄色
+    case '厳重注意': return 0xFFA500; // オレンジ
+    case '停止': return 0xFF0000; // 赤
+    default: return 0xFFFFFF;
+  }
+}
+
+// タイムアウト処理
+async function applyTimeout(member, status) {
+  if (status === '警告') return; // 警告はタイムアウトなし
+  const duration = status === '厳重注意' ? 10 * 60 * 1000 : 24 * 60 * 60 * 1000; // Discordタイムアウト
+  try { await member.timeout(duration, `自動 ${status}`); } catch {}
+}
+
+// タイムアウト解除
+async function removeTimeout(member) {
+  try { await member.timeout(null, 'タイムアウト解除'); } catch {}
 }
 
 // データ読み込み・保存
@@ -41,25 +70,6 @@ async function saveData(message, data) {
   await message.edit(`\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``);
 }
 
-// 状況取得
-function getStatus(count) {
-  if (count >= 5) return '停止';
-  if (count >= 4) return '厳重注意';
-  return '警告';
-}
-
-// タイムアウト処理
-async function applyTimeout(member, status) {
-  if (status === '警告') return; // 警告はタイムアウトなし
-  const duration = status === '厳重注意' ? 10 * 60 * 1000 : 24 * 60 * 60 * 1000; // ミリ秒
-  try { await member.timeout(duration, `自動 ${status}`); } catch {}
-}
-
-// タイムアウト解除
-async function removeTimeout(member) {
-  try { await member.timeout(null, 'タイムアウト解除'); } catch {}
-}
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('warn')
@@ -79,7 +89,7 @@ module.exports = {
       )),
 
   async execute(interaction) {
-    const { client, member } = interaction;
+    const { client, member, guild } = interaction;
     const user = interaction.options.getUser('user');
     const type = interaction.options.getString('type');
     const reason = interaction.options.getString('reason') || 'ルール違反';
@@ -101,6 +111,8 @@ module.exports = {
       data.users.push(target);
     }
 
+    const memberObj = guild.members.cache.get(user.id);
+
     // remove前にexpiry確認して期限切れならinfractions削除
     if (type === 'remove' && target.infractions.length) {
       const latest = target.infractions[target.infractions.length - 1];
@@ -110,21 +122,22 @@ module.exports = {
       }
     }
 
-    // add処理
     if (type === 'add') {
       target.count = Math.min(target.count + 1, 5);
       const status = getStatus(target.count);
       const expiry = getExpiry(status);
+
       target.infractions.push({
         type: status,
         reason,
         date: dayjs().tz('Asia/Tokyo').toISOString(),
         expiry: expiry ? expiry.toISOString() : null
       });
-      await applyTimeout(interaction.guild.members.cache.get(user.id), status);
+
+      await applyTimeout(memberObj, status);
       await saveData(message, data);
 
-      const embed = new EmbedBuilder()
+      const replyEmbed = new EmbedBuilder()
         .setTitle(`⚠️ ${status}を付与しました`)
         .addFields(
           { name: '対象', value: `${user} (${user.id})` },
@@ -133,38 +146,44 @@ module.exports = {
           { name: '現在の警告回数', value: `${target.count}`, inline: true },
           { name: '状況', value: status, inline: true }
         )
-        .setColor(0xffa500)
+        .setColor(getColor(status))
         .setTimestamp();
 
-      try { await user.send({ embeds: [embed] }); } catch {}
-      await interaction.editReply({ embeds: [embed] });
+      const dmEmbed = new EmbedBuilder()
+        .setTitle(`${status}を受けました`)
+        .setDescription(`理由: ${reason}`)
+        .addFields(
+          { name: '状況', value: status, inline: true },
+          { name: '期限', value: expiry ? expiry.format('YYYY-MM-DD HH:mm:ss') : 'なし', inline: true }
+        )
+        .setColor(getColor(status))
+        .setTimestamp();
+
+      try { await user.send({ embeds: [dmEmbed] }); } catch {}
+      await interaction.editReply({ embeds: [replyEmbed] });
     }
 
-    // remove処理
     else if (type === 'remove') {
       if (target.count <= 0) {
         await interaction.editReply('❌ このユーザーには警告がありません。');
         return;
       }
 
-      // 状況変化の確認
       const oldStatus = getStatus(target.count);
       target.count = Math.max(target.count - 1, 0);
       const newStatus = getStatus(target.count);
+
       if (target.infractions.length) target.infractions.pop();
 
-      // タイムアウト調整
-      const memberObj = interaction.guild.members.cache.get(user.id);
       if (oldStatus !== newStatus) {
-        await removeTimeout(memberObj); // 旧ステータス解除
-        await applyTimeout(memberObj, newStatus); // 新ステータス適用
+        await removeTimeout(memberObj);
+        await applyTimeout(memberObj, newStatus);
       }
 
       await saveData(message, data);
       await interaction.editReply(`✅ ${user.username} の警告を1件削除しました。`);
     }
 
-    // list処理
     else if (type === 'list') {
       if (!target.infractions.length) {
         await interaction.editReply(`📘 ${user.username} さんには警告履歴がありません。`);
