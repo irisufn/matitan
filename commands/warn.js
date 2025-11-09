@@ -5,8 +5,8 @@ const ALLOWED_USER_ID = '986615974243491880';
 const ALLOWED_ROLE_ID = '1394113342876155914';
 
 // JSON管理チャンネルIDとメッセージID
-const DATA_CHANNEL_ID = 'ここにチャンネルIDを入力';
-const DATA_MESSAGE_ID = 'ここに固定メッセージIDを入力';
+const DATA_CHANNEL_ID = '1422204415036752013';
+const DATA_MESSAGE_ID = '1436925986594750496';
 
 // 🔽 データ読み込み・保存関数
 async function loadData(client) {
