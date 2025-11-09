@@ -31,12 +31,12 @@ module.exports = {
             for (const user of data.users) {
                 if (!user.infractions || user.infractions.length === 0) continue;
 
-                // infractions内の最新date + durationを取得
+                // infractions内の最新expiryを取得
                 const latestExpiry = user.infractions
-                    .map(i => dayjs(i.date).tz("Asia/Tokyo").add(i.duration || 0, 'day'))
-                    .sort((a, b) => b - a)[0];
+                    .map(i => dayjs(i.expiry).tz("Asia/Tokyo"))
+                    .sort((a, b) => b.valueOf() - a.valueOf())[0];
 
-                if (latestExpiry.isBefore(now)) {
+                if (latestExpiry && latestExpiry.isBefore(now)) {
                     user.infractions = [];
                     user.count = 0;
                     modified = true;
