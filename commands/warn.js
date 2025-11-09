@@ -102,9 +102,13 @@ module.exports = {
       return;
     }
 
+    // deferReply
     await interaction.deferReply({ ephemeral: true });
+
+    // データ読み込み
     const { data, message } = await loadData(client);
 
+    // 対象ユーザーの infractions 確認/作成
     let target = data.users.find(u => u.id === user.id);
     if (!target) {
       target = { id: user.id, name: user.username, count: 0, infractions: [] };
@@ -113,7 +117,7 @@ module.exports = {
 
     const memberObj = guild.members.cache.get(user.id);
 
-    // remove前にexpiry確認して期限切れならinfractions削除
+    // remove前にexpiry確認して期限切れなら infractions 削除
     if (type === 'remove' && target.infractions.length) {
       const latest = target.infractions[target.infractions.length - 1];
       if (latest.expiry && dayjs(latest.expiry).isBefore(dayjs().tz('Asia/Tokyo'))) {
@@ -123,10 +127,12 @@ module.exports = {
     }
 
     if (type === 'add') {
+      // count 更新 / status 確定 / expiry 計算
       target.count = Math.min(target.count + 1, 5);
       const status = getStatus(target.count);
       const expiry = getExpiry(status);
 
+      // infractions 配列に追加
       target.infractions.push({
         type: status,
         reason,
@@ -134,9 +140,27 @@ module.exports = {
         expiry: expiry ? expiry.toISOString() : null
       });
 
+      // タイムアウト適用
       await applyTimeout(memberObj, status);
+
+      // データ保存
       await saveData(message, data);
 
+      // DM向け embed 作成
+      const dmEmbed = new EmbedBuilder()
+        .setTitle(`${status}を受けました`)
+        .setDescription(`理由: ${reason}`)
+        .addFields(
+          { name: '状況', value: status, inline: true },
+          { name: '期限', value: expiry ? expiry.format('YYYY-MM-DD HH:mm:ss') : 'なし', inline: true }
+        )
+        .setColor(getColor(status))
+        .setTimestamp();
+
+      // DM送信（await してもOK、interaction.editReply はまだ）
+      try { await user.send({ embeds: [dmEmbed] }); } catch {}
+
+      // 実行者向け embed 作成
       const replyEmbed = new EmbedBuilder()
         .setTitle(`⚠️ ${status}を付与しました`)
         .addFields(
@@ -149,17 +173,7 @@ module.exports = {
         .setColor(getColor(status))
         .setTimestamp();
 
-      const dmEmbed = new EmbedBuilder()
-        .setTitle(`${status}を受けました`)
-        .setDescription(`理由: ${reason}`)
-        .addFields(
-          { name: '状況', value: status, inline: true },
-          { name: '期限', value: expiry ? expiry.format('YYYY-MM-DD HH:mm:ss') : 'なし', inline: true }
-        )
-        .setColor(getColor(status))
-        .setTimestamp();
-
-      try { await user.send({ embeds: [dmEmbed] }); } catch {}
+      // interaction返信
       await interaction.editReply({ embeds: [replyEmbed] });
     }
 
