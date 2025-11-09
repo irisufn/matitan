@@ -1,10 +1,13 @@
 const { Events } = require('discord.js');
-const { channelId, messageId } = require('../config.json'); // JSON管理用チャンネルとメッセージID
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+// JSON管理用の固定チャンネルID・メッセージID
+const DATA_CHANNEL_ID = '1422204415036752013';
+const DATA_MESSAGE_ID = '1436925986594750496';
 
 module.exports = {
     name: Events.ClientReady,
@@ -16,8 +19,8 @@ module.exports = {
         console.log("------------------------------");
 
         try {
-            const channel = await client.channels.fetch(channelId);
-            const msg = await channel.messages.fetch(messageId);
+            const channel = await client.channels.fetch(DATA_CHANNEL_ID);
+            const msg = await channel.messages.fetch(DATA_MESSAGE_ID);
             let data = JSON.parse(msg.content);
 
             const now = dayjs().tz("Asia/Tokyo");
