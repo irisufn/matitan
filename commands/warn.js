@@ -9,6 +9,7 @@ const ALLOWED_USER_ID = ['986615974243491880', '1340695645354328180'];
 const ALLOWED_ROLE_ID = '1394113342876155914';
 const DATA_CHANNEL_ID = '1422204415036752013';
 const DATA_MESSAGE_ID = '1436925986594750496';
+const LOG_CHANNEL_ID = '1436957557435400264'; // DMの代わりに送るチャンネル
 
 // expiry計算（期限）
 function getExpiry(status) {
@@ -147,19 +148,22 @@ module.exports = {
       // データ保存
       await saveData(message, data);
 
-      // DM向け embed 作成
-      const dmEmbed = new EmbedBuilder()
+      // 指定チャンネル向け embed 作成（DM廃止）
+      const logEmbed = new EmbedBuilder()
         .setTitle(`${status}を受けました`)
-        .setDescription(`理由: ${reason}`)
         .addFields(
-          { name: '状況', value: status, inline: true },
-          { name: '期限', value: expiry ? expiry.format('YYYY-MM-DD HH:mm:ss') : 'なし', inline: true }
+          { name: '対象', value: `<@${user.id}>`, inline: true },
+          { name: '理由', value: reason, inline: true },
+          { name: '期限', value: expiry ? expiry.format('YYYY-MM-DD HH:mm:ss') : 'なし', inline: true },
+          { name: '現在の警告回数', value: `${target.count}`, inline: true },
+          { name: '状況', value: status, inline: true }
         )
         .setColor(getColor(status))
         .setTimestamp();
 
-      // DM送信（await してもOK、interaction.editReply はまだ）
-      try { await user.send({ embeds: [dmEmbed] }); } catch {}
+      // ログチャンネルに送信
+      const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+      await logChannel.send({ embeds: [logEmbed] });
 
       // 実行者向け embed 作成
       const replyEmbed = new EmbedBuilder()
@@ -174,7 +178,6 @@ module.exports = {
         .setColor(getColor(status))
         .setTimestamp();
 
-      // interaction返信
       await interaction.editReply({ embeds: [replyEmbed] });
     }
 
