@@ -5,9 +5,11 @@ const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// 実行を許可するユーザーID・ロールID
+// 実行を許可するユーザーID・ロールID・サーバーID
 const ALLOWED_USER_ID = '986615974243491880';
 const ALLOWED_ROLE_ID = '1394113342876155914';
+const ALLOWED_GUILD_IDS = ['1419130447535013952']; // 追加で許可するサーバーID
+
 
 // JSON管理チャンネルIDとメッセージID
 const DATA_CHANNEL_ID = '1422204415036752013';
@@ -93,11 +95,12 @@ module.exports = {
   async execute(interaction) {
     const { client, member } = interaction;
     const sub = interaction.options.getSubcommand();
+    const inAllowedGuild = ALLOWED_GUILD_IDS.includes(interaction.guildId);
 
     // 🔒 権限チェック
     const hasRole = member.roles.cache.has(ALLOWED_ROLE_ID);
     const isUser = member.id === ALLOWED_USER_ID;
-    if (!hasRole && !isUser) {
+    if (!hasRole && !isUser && !inAllowedGuild) {
       await interaction.reply({ content: '❌ このコマンドを実行する権限がありません。', ephemeral: true });
       return;
     }
