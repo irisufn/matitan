@@ -1,4 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // 実行を許可するユーザーID・ロールID
 const ALLOWED_USER_ID = '986615974243491880';
@@ -16,7 +21,6 @@ async function loadData(client) {
   try {
     msg = await channel.messages.fetch(DATA_MESSAGE_ID);
   } catch {
-    // メッセージが存在しない場合は作成
     const initData = { users: [] };
     const newMsg = await channel.send(`\`\`\`json\n${JSON.stringify(initData, null, 2)}\n\`\`\``);
     return { data: initData, message: newMsg };
@@ -31,7 +35,25 @@ async function saveData(message, data) {
   await message.edit(`\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``);
 }
 
-// 🔽 コマンド定義
+// 🔽 警告処理
+function addInfraction(target, type, reason, duration, now) {
+  const date = now.toISOString().split('T')[0];
+  target.infractions.push({ type, reason, date, duration });
+
+  // count 更新
+  const counts = { '警告': 1, '厳重注意': 4, '停止': 5 };
+  target.count = Math.min(target.count ? target.count + 1 : 1, 5);
+
+  // infractions整理
+  const types = [];
+  if (target.count >= 1) types.push('警告');
+  if (target.count >= 4) types.push('厳重注意');
+  if (target.count >= 5) types.push('停止');
+
+  // すでに infractions に存在するtypeは重複させない
+  target.infractions = target.infractions.filter(i => types.includes(i.type));
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('warn')
@@ -45,8 +67,18 @@ module.exports = {
           { name: '厳重注意', value: '厳重注意' },
           { name: '停止', value: '停止' }
         ))
-        .addStringOption(opt => opt.setName('reason').setDescription('理由').setRequired(true))
+        .addStringOption(opt => opt.setName('reason').setDescription('理由').setRequired(true).addChoices(
+          { name: 'ルール違反', value: 'ルール違反' },
+          { name: 'いやがらせ', value: 'いやがらせ' },
+          { name: '荒らし', value: '荒らし' }
+        ))
         .addIntegerOption(opt => opt.setName('duration').setDescription('日数').setRequired(true))
+    )
+    .addSubcommand(sub =>
+      sub.setName('remove')
+        .setDescription('個別の警告を削除')
+        .addUserOption(opt => opt.setName('user').setDescription('対象ユーザー').setRequired(true))
+        .addIntegerOption(opt => opt.setName('id').setDescription('削除する警告番号').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('list')
@@ -55,13 +87,7 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('check')
-        .setDescription('期限切れの警告を削除')
-    )
-    .addSubcommand(sub =>
-      sub.setName('remove')
-        .setDescription('個別の警告を削除')
-        .addUserOption(opt => opt.setName('user').setDescription('対象ユーザー').setRequired(true))
-        .addIntegerOption(opt => opt.setName('id').setDescription('削除する警告番号').setRequired(true))
+        .setDescription('期限切れの警告を全ユーザーから削除')
     ),
 
   async execute(interaction) {
@@ -77,26 +103,23 @@ module.exports = {
     }
 
     await interaction.deferReply({ ephemeral: true });
-
     const { data, message } = await loadData(client);
-
     const now = new Date();
 
-    // 📕 /warn add
+    // 📕 add
     if (sub === 'add') {
       const user = interaction.options.getUser('user');
       const type = interaction.options.getString('type');
       const reason = interaction.options.getString('reason');
       const duration = interaction.options.getInteger('duration');
-      const date = now.toISOString().split('T')[0];
 
       let target = data.users.find(u => u.id === user.id);
       if (!target) {
-        target = { id: user.id, name: user.username, infractions: [] };
+        target = { id: user.id, name: user.username, infractions: [], count: 0 };
         data.users.push(target);
       }
 
-      target.infractions.push({ type, reason, date, duration });
+      addInfraction(target, type, reason, duration, now);
       await saveData(message, data);
 
       const embed = new EmbedBuilder()
@@ -106,38 +129,31 @@ module.exports = {
           { name: '種類', value: type, inline: true },
           { name: '理由', value: reason, inline: true },
           { name: '期間', value: `${duration}日`, inline: true },
+          { name: '現在の警告回数', value: `${target.count}`, inline: true },
         )
         .setColor(0xffa500)
         .setTimestamp();
 
-      // DM送信を試みる
-      let dmFailed = false;
-      try {
-        await user.send({ embeds: [embed] });
-      } catch {
-        dmFailed = true;
-      }
-
-      if (dmFailed) embed.setDescription('※DM送信に失敗しました');
+      // DM送信
+      try { await user.send({ embeds: [embed] }); } catch {}
 
       await interaction.editReply({ embeds: [embed] });
     }
 
-    // 📗 /warn list
+    // 📗 list
     else if (sub === 'list') {
       const user = interaction.options.getUser('user');
       const target = data.users.find(u => u.id === user.id);
 
-      if (!target || target.infractions.length === 0) {
+      if (!target || !target.infractions.length) {
         await interaction.editReply(`📘 ${user.username} さんには警告履歴がありません。`);
         return;
       }
 
       const list = target.infractions.map((inf, i) => {
-        const issued = new Date(inf.date);
-        const diffDays = Math.floor((now - issued) / (1000 * 60 * 60 * 24));
-        const remaining = inf.duration - diffDays;
-        return `#${i + 1}: ${inf.type}（${inf.reason}）\n発行日: ${inf.date} / 残り: ${remaining > 0 ? `${remaining}日` : '期限切れ'}`;
+        const issued = dayjs(inf.date);
+        const expiry = issued.add(inf.duration || 0, 'day');
+        return `#${i + 1}: ${inf.type}（${inf.reason}）\n発行日: ${inf.date} / 期限: ${expiry.format('YYYY-MM-DD')}`;
       }).join('\n\n');
 
       const embed = new EmbedBuilder()
@@ -148,35 +164,37 @@ module.exports = {
       await interaction.editReply({ embeds: [embed] });
     }
 
-    // 🧹 /warn check
+    // 🧹 check
     else if (sub === 'check') {
       let removed = 0;
+      const nowDayjs = dayjs();
       for (const user of data.users) {
         const before = user.infractions.length;
         user.infractions = user.infractions.filter(inf => {
-          const issued = new Date(inf.date);
-          const diffDays = (now - issued) / (1000 * 60 * 60 * 24);
-          return diffDays < inf.duration;
+          const expiry = dayjs(inf.date).add(inf.duration || 0, 'day');
+          return expiry.isAfter(nowDayjs);
         });
         removed += before - user.infractions.length;
+        if (!user.infractions.length) user.count = 0;
       }
 
       await saveData(message, data);
       await interaction.editReply(`🧹 ${removed} 件の期限切れ警告を削除しました。`);
     }
 
-    // ❌ /warn remove
+    // ❌ remove
     else if (sub === 'remove') {
       const user = interaction.options.getUser('user');
       const id = interaction.options.getInteger('id');
-
       const target = data.users.find(u => u.id === user.id);
+
       if (!target || target.infractions.length < id || id <= 0) {
         await interaction.editReply(`❌ 指定した警告IDは存在しません。`);
         return;
       }
 
       target.infractions.splice(id - 1, 1);
+      target.count = Math.max(target.count - 1, 0);
       await saveData(message, data);
 
       await interaction.editReply(`✅ ${user.username} の警告 #${id} を削除しました。`);
